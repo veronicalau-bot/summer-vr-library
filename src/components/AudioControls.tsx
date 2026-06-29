@@ -24,7 +24,7 @@ export default function AudioControls() {
   return (
     <div className="audio-controls">
       {!audioStarted ? (
-        <button className="audio-btn start" onClick={handleStart} title="播放海浪 + 海鷗聲">
+        <button className="audio-btn start" onClick={handleStart} title="播放海浪 + 海鷗聲（Pixabay）">
           🌊 播放海浪 + 海鷗聲
         </button>
       ) : (
