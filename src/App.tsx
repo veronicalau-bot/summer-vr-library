@@ -63,7 +63,7 @@ export default function App() {
             className="vr-enter-btn"
             onClick={() => xrStore.enterVR()}
           >
-            🥽 進入 VR 體驗
+            🥽 戴上VR裝置, 進來Chill一下
           </button>
         </>
       )}
