@@ -1,18 +1,19 @@
 /**
- * OceanAudio – plays real ocean + seagull sound from external audio file.
+ * OceanAudio – plays real ocean + seagull sound from GitHub raw URL.
  * Uses HTMLAudioElement for reliable looping playback.
  *
- * To use the Pixabay sound "nature-sea-and-seagull-wave-5932":
- * 1. Download from https://pixabay.com/sound-effects/nature-sea-and-seagull-wave-5932/
- * 2. Place the MP3 file in public/audio/ as "nature-sea-and-seagull-wave-5932.mp3"
+ * Audio source: Pixabay "nature-sea-and-seagull-wave-5932"
+ * https://pixabay.com/sound-effects/nature-sea-and-seagull-wave-5932/
  */
 export class OceanAudio {
   private audio: HTMLAudioElement | null = null
   private _volume = 0.5
   private _muted = false
 
-  // Pixabay audio file path (user should download and place here)
-  private readonly AUDIO_URL = '/audio/nature-sea-and-seagull-wave-5932.mp3'
+  // Direct GitHub raw URL (reliable CDN, works across deployments)
+  // Format: https://github.com/<owner>/<repo>/raw/refs/heads/<branch>/<path>
+  private readonly AUDIO_URL =
+    'https://github.com/veronicalau-bot/summer-vr-library/raw/refs/heads/main/public/audio/nature-sea-and-seagull-wave-5932.mp3'
 
   async start(): Promise<void> {
     if (this.audio) return

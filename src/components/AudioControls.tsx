@@ -6,35 +6,6 @@ export default function AudioControls() {
   const { audioStarted, setAudioStarted, audioMuted, audioVolume, toggleMute, setVolume } =
     useAppStore()
 
-  // Start audio on first user interaction anywhere on the page (default on)
-  // Browsers block autoplay without user gesture; this captures the first click/tap/key
-  useEffect(() => {
-    if (audioStarted) return
-
-    const startOnFirstInteraction = async () => {
-      try {
-        await oceanAudio.start()
-        setAudioStarted(true)
-      } catch (err) {
-        console.warn('[AudioControls] Failed to start audio on interaction:', err)
-      }
-      // Remove listeners after first successful attempt
-      window.removeEventListener('click', startOnFirstInteraction)
-      window.removeEventListener('keydown', startOnFirstInteraction)
-      window.removeEventListener('touchstart', startOnFirstInteraction)
-    }
-
-    window.addEventListener('click', startOnFirstInteraction, { once: true })
-    window.addEventListener('keydown', startOnFirstInteraction, { once: true })
-    window.addEventListener('touchstart', startOnFirstInteraction, { once: true })
-
-    return () => {
-      window.removeEventListener('click', startOnFirstInteraction)
-      window.removeEventListener('keydown', startOnFirstInteraction)
-      window.removeEventListener('touchstart', startOnFirstInteraction)
-    }
-  }, [audioStarted, setAudioStarted])
-
   // Sync mute state with audio engine whenever it changes
   useEffect(() => {
     if (audioStarted) oceanAudio.setMuted(audioMuted)
