@@ -5,7 +5,10 @@ interface NewsItem {
   link: string
 }
 
-const RSS_PROXY_URL = '/rthk-rss/c_expressnews_clocal.xml'
+const RSS_PROXY_URL =
+  import.meta.env.DEV
+    ? '/rthk-rss/c_expressnews_clocal.xml'
+    : '/api/rthk-rss?path=c_expressnews_clocal.xml'
 const UPDATE_INTERVAL = 10 * 60 * 1000 // 10 minutes
 
 const RTHK_ATTRIBUTION = '來源：香港電台 RTHK'

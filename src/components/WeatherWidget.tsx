@@ -12,7 +12,10 @@ interface WeatherData {
   updateTime: string
 }
 
-const HKO_API = '/hko-weather/weather.php?dataType=rhrread&lang=tc'
+const HKO_API =
+  import.meta.env.DEV
+    ? '/hko-weather/weather.php?dataType=rhrread&lang=tc'
+    : '/api/hko-weather?dataType=rhrread&lang=tc'
 const UPDATE_INTERVAL = 12 * 60 * 1000 // 12 minutes
 
 const HKO_ATTRIBUTION = '資料來源：香港天文台'
