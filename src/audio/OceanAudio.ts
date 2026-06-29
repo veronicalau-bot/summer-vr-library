@@ -1,7 +1,6 @@
 /**
- * OceanAudio – generates looping ocean-wave sound entirely via Web Audio API.
- * No external audio files required; uses pink-noise filtered through a low-pass
- * filter and amplitude-modulated to simulate rolling waves.
+ * OceanAudio – generates looping ocean-wave sound + soft seagull calls
+ * entirely via Web Audio API. No external audio files required.
  */
 export class OceanAudio {
   private ctx: AudioContext | null = null
@@ -75,6 +74,49 @@ export class OceanAudio {
 
     source.start()
     lfoSource.start()
+
+    // --- Soft seagull calls (synthesized) ---
+    this.scheduleSeagullCalls()
+  }
+
+  /** Periodically play soft seagull-like chirps */
+  private scheduleSeagullCalls() {
+    if (!this.ctx) return
+
+    const playSeagull = () => {
+      if (!this.ctx || !this.masterGain || this._muted) return
+
+      const now = this.ctx.currentTime
+      const osc = this.ctx.createOscillator()
+      const gain = this.ctx.createGain()
+      const filter = this.ctx.createBiquadFilter()
+
+      osc.type = 'sawtooth'
+      osc.frequency.value = 820 + Math.random() * 180
+
+      filter.type = 'bandpass'
+      filter.frequency.value = 900
+      filter.Q.value = 4
+
+      gain.gain.value = 0
+      gain.gain.setValueAtTime(0.0001, now)
+      gain.gain.linearRampToValueAtTime(0.035, now + 0.06)
+      gain.gain.linearRampToValueAtTime(0.0001, now + 0.9 + Math.random() * 0.4)
+
+      osc.connect(filter)
+      filter.connect(gain)
+      gain.connect(this.masterGain)
+
+      osc.start(now)
+      osc.stop(now + 1.6)
+
+      // Schedule next call (8–20 seconds apart)
+      const nextDelay = 8000 + Math.random() * 12000
+      setTimeout(playSeagull, nextDelay)
+    }
+
+    // First call after 6–12 seconds
+    setTimeout(playSeagull, 6000 + Math.random() * 6000)
   }
 
   setVolume(vol: number): void {

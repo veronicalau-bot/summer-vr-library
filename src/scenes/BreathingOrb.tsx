@@ -11,25 +11,29 @@ import * as THREE from 'three'
 export default function BreathingOrb() {
   const groupRef = useRef<THREE.Group>(null!)
   const [active, setActive] = useState(true)
+  const [breathText, setBreathText] = useState('吸氣')
 
-  // 呼吸動畫：約 6 秒一個完整呼吸週期
+  // 呼吸動畫 + 文字完全同步（使用同一時間來源 state.clock.elapsedTime）
   useFrame((state) => {
-    if (!active || !groupRef.current) return
+    if (!groupRef.current) return
 
     const t = state.clock.elapsedTime
-    const scale = 1 + Math.sin(t * 0.8) * 0.18
-    groupRef.current.scale.setScalar(scale)
+
+    if (active) {
+      const scale = 1 + Math.sin(t * 0.8) * 0.18
+      groupRef.current.scale.setScalar(scale)
+
+      // 文字與球體縮放完全同步
+      const newText = Math.sin(t * 0.8) > 0 ? '吸氣' : '呼氣'
+      if (newText !== breathText) setBreathText(newText)
+    } else {
+      groupRef.current.scale.setScalar(1)
+      if (breathText !== '已暫停') setBreathText('已暫停')
+    }
   })
 
   const handleClick = () => {
     setActive((prev) => !prev)
-  }
-
-  // 根據 sin 波即時計算引導文字（避免在 useFrame 中 setState）
-  const getBreathText = () => {
-    if (!active) return '已暫停'
-    const t = performance.now() / 1000
-    return Math.sin(t * 0.8) > 0 ? '吸氣' : '呼氣'
   }
 
   return (
@@ -62,7 +66,7 @@ export default function BreathingOrb() {
         <meshBasicMaterial color="#e0f2fe" transparent opacity={0.08} depthWrite={false} />
       </mesh>
 
-      {/* 引導文字 - 浮動在球體上方 */}
+      {/* 引導文字 - 浮動在球體上方，與呼吸同步 */}
       <Text
         position={[0, 1.1, 0]}
         fontSize={0.28}
@@ -72,7 +76,7 @@ export default function BreathingOrb() {
         outlineWidth={0.008}
         outlineColor="#0f172a"
       >
-        {getBreathText()}
+        {breathText}
       </Text>
 
       {/* 副標題 */}

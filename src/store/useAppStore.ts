@@ -18,7 +18,7 @@ export const useAppStore = create<AppState>((set) => ({
   audioStarted: false,
   setAudioStarted: (v) => set({ audioStarted: v }),
   audioMuted: false,
-  audioVolume: 0.3,
+  audioVolume: 0.5,
   toggleMute: () => set((s) => ({ audioMuted: !s.audioMuted })),
   setVolume: (vol) => set({ audioVolume: vol }),
 }))
