@@ -6,8 +6,8 @@ import { useAppStore } from '../store/useAppStore'
 export default function HUD() {
   const { selectedBook } = useAppStore()
   const [xrSupported, setXrSupported] = useState(false)
-  const [xrActive, setXrActive] = useState(false)
 
+  // We still detect support for showing/hiding the button
   useEffect(() => {
     if ('xr' in navigator && navigator.xr) {
       navigator.xr
@@ -16,25 +16,6 @@ export default function HUD() {
         .catch(() => setXrSupported(false))
     }
   }, [])
-
-  const enterVR = async () => {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const xr = (navigator as any).xr
-      if (!xr) return
-      const session = await xr.requestSession('immersive-vr', {
-        optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking'],
-      })
-      setXrActive(true)
-
-      session.addEventListener('end', () => {
-        setXrActive(false)
-      })
-    } catch (err) {
-      console.error('Failed to enter VR:', err)
-      alert('無法進入 VR 模式，請確認裝置支援 WebXR')
-    }
-  }
 
   return (
     <>
@@ -47,12 +28,7 @@ export default function HUD() {
             <div className="hud-logo-sub">在陽光沙灘上，發現你的下一本好書</div>
           </div>
         </div>
-        {xrSupported && !xrActive && (
-          <button className="hud-xr-btn" onClick={enterVR}>
-            🥽 進入 VR
-          </button>
-        )}
-        {xrActive && <span className="hud-xr-badge active">🥽 VR 模式</span>}
+        {xrSupported && <span className="hud-xr-badge left">🥽 VR 已就緒</span>}
       </header>
 
       {/* ── Bottom hint (hidden when book panel open) ── */}
