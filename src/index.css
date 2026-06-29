@@ -129,7 +129,7 @@ body {
 
 .hud-xr-btn {
   position: absolute;
-  top: 72px;
+  top: 120px;
   left: 18px;
   background: linear-gradient(135deg, #00c878, #00a86b);
   border: none;

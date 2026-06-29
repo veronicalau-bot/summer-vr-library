@@ -1,5 +1,6 @@
-import { Suspense, useState, useEffect } from 'react'
-import { Canvas, useThree } from '@react-three/fiber'
+import { Suspense, useState, useEffect, useRef } from 'react'
+import { Canvas } from '@react-three/fiber'
+import * as THREE from 'three'
 import BeachScene from './scenes/BeachScene'
 import InfoPanel from './components/InfoPanel'
 import AudioControls from './components/AudioControls'
@@ -9,30 +10,31 @@ import BookList from './components/BookList'
 import NewsTicker from './components/NewsTicker'
 import WeatherWidget from './components/WeatherWidget'
 
-function VRButton() {
-  const { gl } = useThree()
+// Lives OUTSIDE Canvas so it renders as a real DOM button
+function VRButton({ glRef }: { glRef: React.RefObject<THREE.WebGLRenderer | null> }) {
   const [supported, setSupported] = useState(false)
   const [active, setActive] = useState(false)
 
   useEffect(() => {
     if ('xr' in navigator && navigator.xr) {
-      navigator.xr.isSessionSupported('immersive-vr').then(setSupported)
+      navigator.xr.isSessionSupported('immersive-vr').then(setSupported).catch(() => {})
     }
   }, [])
 
   const enterVR = async () => {
+    const gl = glRef.current
+    if (!gl) return
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const xr = (navigator as any).xr
-      if (!xr) return
-      const session = await xr.requestSession('immersive-vr', {
+      const session = await (navigator as any).xr.requestSession('immersive-vr', {
         optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking'],
       })
+      // Properly bind the session to Three.js renderer
       await gl.xr.setSession(session)
       setActive(true)
       session.addEventListener('end', () => setActive(false))
     } catch (err) {
-      console.error('Failed to enter VR:', err)
+      console.error('VR session failed:', err)
       alert('無法進入 VR 模式，請確認裝置支援 WebXR')
     }
   }
@@ -40,32 +42,15 @@ function VRButton() {
   if (!supported) return null
 
   return (
-    <button
-      onClick={enterVR}
-      style={{
-        position: 'absolute',
-        top: '120px',
-        left: '18px',
-        zIndex: 30,
-        padding: '8px 18px',
-        borderRadius: '999px',
-        background: active
-          ? 'rgba(0,200,120,0.35)'
-          : 'linear-gradient(135deg, #00c878, #00a86b)',
-        color: 'white',
-        border: active ? '1px solid rgba(0,220,130,0.65)' : 'none',
-        fontSize: '0.85rem',
-        fontWeight: 600,
-        cursor: 'pointer',
-        boxShadow: '0 4px 14px rgba(0,200,120,0.35)',
-      }}
-    >
-      {active ? '🥽 VR 模式' : '🥽 進入 VR'}
+    <button className={`hud-xr-btn${active ? ' active' : ''}`} onClick={enterVR}>
+      🥽 {active ? 'VR 模式中' : '進入 VR'}
     </button>
   )
 }
 
 export default function App() {
+  const glRef = useRef<THREE.WebGLRenderer | null>(null)
+
   return (
     <div className="app-root">
       <Canvas
@@ -73,18 +58,20 @@ export default function App() {
         gl={{ antialias: true, powerPreference: 'high-performance' }}
         dpr={[1, 2]}
         onCreated={({ gl }) => {
-          gl.toneMapping = 4 /* THREE.ACESFilmicToneMapping */
+          gl.xr.enabled = true           // ← required for WebXR to take over the render loop
+          gl.toneMapping = 4             /* THREE.ACESFilmicToneMapping */
           gl.toneMappingExposure = 1.45
+          glRef.current = gl             // share renderer with VRButton
         }}
       >
         <Suspense fallback={null}>
           <BeachScene />
-          <VRButton />
         </Suspense>
       </Canvas>
 
       <LoadingScreen />
       <HUD />
+      <VRButton glRef={glRef} />
       <BookList />
       <NewsTicker />
       <WeatherWidget />
@@ -93,3 +80,5 @@ export default function App() {
     </div>
   )
 }
+
+
