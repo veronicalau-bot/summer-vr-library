@@ -4,6 +4,8 @@ import { Sky, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { useAppStore } from '../store/useAppStore'
+import VRBookShelf from './VRBookShelf'
+import VRBookInfo from './VRBookInfo'
 
 const PANORAMA_GLB_URL = 'https://firebasestorage.googleapis.com/v0/b/orientation2026-5dcd5.firebasestorage.app/o/free_hdri_background_realistic_beach.glb?alt=media&token=37f8ab43-808c-4ae4-8d53-e6cb08f3c662'
 
@@ -98,7 +100,11 @@ export default function BeachScene() {
       <directionalLight position={[-8, 10, 12]} intensity={0.9} color="#d6edff" />
       <directionalLight position={[0, -4, 0]} intensity={0.6} color="#f8e8c0" />
 
-      {/* 3-D book wall removed — books now shown as HTML overlay (BookList) */}
+      {/* VR-only 3D bookshelf (shown inside headset via XR) */}
+      <VRBookShelf />
+
+      {/* VR floating info panel when a book is selected */}
+      <VRBookInfo />
 
       {/* Invisible click-plane to deselect books */}
       <mesh
