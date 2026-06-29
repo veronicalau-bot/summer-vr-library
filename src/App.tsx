@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { XR, createXRStore } from '@react-three/xr'
+import { XR, createXRStore, useXR } from '@react-three/xr'
 import BeachScene from './scenes/BeachScene'
 import InfoPanel from './components/InfoPanel'
 import AudioControls from './components/AudioControls'
@@ -15,6 +15,14 @@ const xrStore = createXRStore({
   offerSession: 'immersive-vr',
   handTracking: true,
 })
+
+// Component that hides HTML overlays while inside an XR session
+function XRSessionGuard({ children }: { children: React.ReactNode }) {
+  const { session } = useXR()
+  // When session is truthy we are inside VR/AR → hide DOM UI
+  if (session) return null
+  return <>{children}</>
+}
 
 export default function App() {
   return (
@@ -35,22 +43,26 @@ export default function App() {
         </XR>
       </Canvas>
 
-      <LoadingScreen />
-      <HUD />
-      <BookList />
-      <NewsTicker />
-      <WeatherWidget />
-      <InfoPanel />
-      <AudioControls />
+      {/* All HTML UI is automatically hidden when an XR session is active.
+          Inside the headset the user only sees the 3D beach + controllers. */}
+      <XRSessionGuard>
+        <LoadingScreen />
+        <HUD />
+        <BookList />
+        <NewsTicker />
+        <WeatherWidget />
+        <InfoPanel />
+        <AudioControls />
 
-      {/* Official XR button from @react-three/xr - handles everything automatically */}
-      <button
-        className="hud-xr-btn"
-        onClick={() => xrStore.enterVR()}
-        style={{ top: '120px', left: '18px' }}
-      >
-        🥽 進入 VR
-      </button>
+        {/* Desktop-only VR entry button (hidden inside VR too) */}
+        <button
+          className="hud-xr-btn"
+          onClick={() => xrStore.enterVR()}
+          style={{ top: '120px', left: '18px' }}
+        >
+          🥽 進入 VR
+        </button>
+      </XRSessionGuard>
     </div>
   )
 }
