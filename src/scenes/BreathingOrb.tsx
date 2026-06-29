@@ -1,21 +1,16 @@
 import { useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Text } from '@react-three/drei'
-import { useXR } from '@react-three/xr'
 import * as THREE from 'three'
 
 /**
  * BreathingOrb - 呼吸之球（靜觀練習）
- * 僅在 VR headset 環境中顯示。
+ * 這個元件只會被渲染在 <XR> 樹內，因此只在 VR headset 中可見。
  * 點擊球體可啟用/停用呼吸動畫，並顯示引導文字「吸氣 / 呼氣」。
  */
 export default function BreathingOrb() {
   const groupRef = useRef<THREE.Group>(null!)
   const [active, setActive] = useState(true)
-
-  // 只有在 XR session 內才顯示（VR headset）
-  const { session } = useXR()
-  if (!session) return null
 
   // 呼吸動畫：約 6 秒一個完整呼吸週期
   useFrame((state) => {
@@ -30,7 +25,7 @@ export default function BreathingOrb() {
     setActive((prev) => !prev)
   }
 
-  // 根據 sin 波判斷目前是「吸氣」還是「呼氣」
+  // 根據 sin 波即時計算引導文字（避免在 useFrame 中 setState）
   const getBreathText = () => {
     if (!active) return '已暫停'
     const t = performance.now() / 1000

@@ -79,7 +79,7 @@ export default function BeachScene() {
     <>
       <PanoramaBackground onReady={setPanoramaReady} />
 
-      {/* 呼吸之球 - VR 靜觀練習 */}
+      {/* 呼吸之球 - VR 靜觀練習（只在 VR 內渲染） */}
       <BreathingOrb />
 
       {/* Render Sky only as fallback when panorama GLB is unavailable. */}
