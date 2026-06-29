@@ -1,10 +1,23 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { oceanAudio } from '../audio/OceanAudio'
 
 export default function AudioControls() {
   const { audioStarted, setAudioStarted, audioMuted, audioVolume, toggleMute, setVolume } =
     useAppStore()
+  const hasAutoStarted = useRef(false)
+
+  // Auto-start ocean audio on mount (default on)
+  useEffect(() => {
+    if (!hasAutoStarted.current && !audioStarted) {
+      hasAutoStarted.current = true
+      oceanAudio.start().then(() => {
+        setAudioStarted(true)
+      }).catch(() => {
+        // If auto-start fails (e.g. file missing), user can still click the button
+      })
+    }
+  }, [audioStarted, setAudioStarted])
 
   // Sync mute state with audio engine whenever it changes
   useEffect(() => {
@@ -24,8 +37,8 @@ export default function AudioControls() {
   return (
     <div className="audio-controls">
       {!audioStarted ? (
-        <button className="audio-btn start" onClick={handleStart} title="播放海浪 + 海鷗聲（Pixabay）">
-          🌊 播放海浪 + 海鷗聲
+        <button className="audio-btn start" onClick={handleStart} title="播放海浪（Pixabay）">
+          🌊 播放海浪
         </button>
       ) : (
         <>
