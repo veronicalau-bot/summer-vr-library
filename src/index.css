@@ -1,0 +1,736 @@
+﻿/* ═══════════════════════════════════════════════
+   Summer VR Library – Global Styles
+   ═══════════════════════════════════════════════ */
+
+/* ── Reset ────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  overflow: hidden;
+  background: #0a3d52;
+  font-family: 'Segoe UI', 'Noto Sans TC', Tahoma, sans-serif;
+  color: white;
+}
+
+#root, .app-root {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+}
+
+/* canvas must fill parent */
+.app-root > canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ── Loading Screen ───────────────────────────── */
+.loading-screen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(145deg, #05263a 0%, #0e5c7a 55%, #87cefa 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  transition: opacity 0.8s ease;
+}
+.loading-screen.fade-out { opacity: 0; pointer-events: none; }
+
+.loading-content { text-align: center; }
+
+.loading-icon {
+  font-size: 5rem;
+  display: block;
+  margin-bottom: 1rem;
+  animation: float 2.4s ease-in-out infinite;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-14px); }
+}
+
+.loading-title {
+  font-size: 2.2rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  margin-bottom: .35rem;
+  text-shadow: 0 2px 12px rgba(0,0,0,.4);
+}
+
+.loading-subtitle {
+  font-size: 1rem;
+  opacity: .75;
+  letter-spacing: .04em;
+  margin-bottom: 2rem;
+}
+
+.loading-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.loading-dots span {
+  display: inline-block;
+  width: 10px; height: 10px;
+  background: rgba(255,255,255,.75);
+  border-radius: 50%;
+  animation: dot-wave 1.3s ease-in-out infinite;
+}
+@keyframes dot-wave {
+  0%, 100% { transform: translateY(0);    opacity: .4; }
+  50%       { transform: translateY(-10px); opacity: 1; }
+}
+
+/* ── HUD Header ───────────────────────────────── */
+.hud-header {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  padding: 14px 20px;
+  background: linear-gradient(to bottom, rgba(0,20,50,.72), transparent);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.hud-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.hud-logo-icon { font-size: 1.6rem; }
+.hud-logo-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-shadow: 0 2px 8px rgba(0,0,0,.55);
+}
+.hud-logo-sub {
+  font-size: .78rem;
+  opacity: .75;
+  margin-top: 1px;
+}
+
+.hud-xr-badge {
+  background: rgba(0,200,120,.22);
+  border: 1px solid rgba(0,220,130,.45);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: .8rem;
+  pointer-events: auto;
+}
+
+/* ── Bottom hint ──────────────────────────────── */
+.hud-hint {
+  position: absolute;
+  bottom: 22px; left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0,0,0,.38);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,.12);
+  padding: 8px 22px;
+  border-radius: 26px;
+  font-size: .8rem;
+  color: rgba(255,255,255,.8);
+  pointer-events: none;
+  z-index: 10;
+  white-space: nowrap;
+}
+.hint-sep { opacity: .4; }
+
+/* ── Audio Controls ───────────────────────────── */
+.audio-controls {
+  position: absolute;
+  top: 14px; right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 20;
+}
+
+.audio-btn {
+  background: rgba(255,255,255,.16);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,.25);
+  color: white;
+  padding: 7px 14px;
+  border-radius: 22px;
+  cursor: pointer;
+  font-size: .85rem;
+  transition: background .2s;
+}
+.audio-btn:hover { background: rgba(255,255,255,.28); }
+.audio-btn.icon  { padding: 7px 10px; font-size: 1.1rem; }
+
+.volume-slider {
+  width: 78px;
+  accent-color: #4fd1c5;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+/* ── Info Panel (Landscape Glass Modal) ────────── */
+.info-panel {
+  display: none;
+}
+
+.info-panel-landscape {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  width: min(92vw, 780px);
+  height: min(68vh, 420px);
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(28px) saturate(160%);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 18px;
+  overflow: hidden;
+  z-index: 40;
+  box-shadow: 0 20px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.25);
+  animation: panel-pop .35s cubic-bezier(0.23,1,0.32,1);
+}
+@keyframes panel-pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* close button */
+.panel-close {
+  position: absolute;
+  top: 14px; right: 14px;
+  z-index: 10;
+  width: 34px; height: 34px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.22);
+  color: #fff;
+  font-size: 1rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background .2s, border-color .2s;
+}
+.panel-close:hover { background: rgba(255,255,255,0.24); border-color: rgba(255,255,255,0.38); }
+
+/* left cover pane */
+.panel-cover-landscape {
+  flex: 0 0 42%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 32px 28px 28px;
+  color: #fff;
+  position: relative;
+}
+.cover-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.cover-pages {
+  font-size: .72rem;
+  opacity: .6;
+  letter-spacing: .04em;
+}
+.cover-title-large {
+  font-size: 1.55rem;
+  font-weight: 700;
+  line-height: 1.35;
+  margin-bottom: 6px;
+  text-shadow: 0 2px 14px rgba(0,0,0,.45);
+}
+.cover-author {
+  font-size: .95rem;
+  opacity: .7;
+}
+
+/* right content pane */
+.panel-body-landscape {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: rgba(0,0,0,0.08);
+  padding: 28px 26px 22px;
+}
+.body-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+.body-scroll::-webkit-scrollbar { width: 3px; }
+.body-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.2); border-radius: 3px; }
+
+/* reuse existing category / tags / desc styles (slightly adjusted) */
+.panel-category {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: .71rem;
+  font-weight: 700;
+  color: rgba(0,0,0,.8);
+  margin-bottom: 16px;
+}
+
+.panel-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 16px;
+}
+.panel-tag {
+  background: rgba(255,255,255,.12);
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: .71rem;
+  opacity: .85;
+}
+
+.panel-desc {
+  font-size: .9rem;
+  line-height: 1.75;
+  opacity: .9;
+  margin-bottom: 18px;
+}
+
+/* borrow row at bottom */
+.panel-borrow-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,.1);
+}
+
+.panel-qr-small {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.panel-qr-small img {
+  border-radius: 8px;
+  background: white;
+  padding: 3px;
+  display: block;
+}
+.panel-qr-small small {
+  font-size: .66rem;
+  opacity: .5;
+}
+
+.panel-borrow-btn {
+  display: inline-block;
+  padding: 13px 26px;
+  background: linear-gradient(135deg, #1a7ca8, #0fa3b1);
+  border-radius: 999px;
+  text-align: center;
+  color: white;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: .95rem;
+  transition: all .2s;
+  box-shadow: 0 4px 18px rgba(26,124,168,.4);
+  white-space: nowrap;
+}
+.panel-borrow-btn:hover {
+  background: linear-gradient(135deg, #2290c0, #14b5c4);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(26,124,168,.5);
+}
+
+/* ── Book List Overlay ────────────────────────── */
+.book-list-overlay {
+  position: absolute;
+  bottom: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(96vw, 940px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 30;
+  pointer-events: none;
+}
+
+.book-list-label {
+  font-size: .75rem;
+  letter-spacing: .06em;
+  color: rgba(255,255,255,.7);
+  text-shadow: 0 1px 6px rgba(0,0,0,.8);
+}
+
+.book-list-wrapper {
+  position: relative;
+  width: 100%;
+  pointer-events: all;
+}
+
+.book-list-strip {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  overflow-x: auto;
+  padding: 4px 4px 8px;
+  scrollbar-width: none;
+  scrollbar-color: transparent transparent;
+  scroll-snap-type: x mandatory;
+}
+.book-list-strip::-webkit-scrollbar { display: none; }
+
+.book-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 36px;
+  height: 36px;
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: white;
+  font-size: 1rem;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+  pointer-events: all;
+}
+.book-nav-btn:hover {
+  background: rgba(255,255,255,0.22);
+  border-color: rgba(255,255,255,0.4);
+  transform: translateY(-50%) scale(1.1);
+}
+.book-nav-btn.left { left: -18px; }
+.book-nav-btn.right { right: -18px; }
+
+.book-card-chip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  /* futuristic 3D glass */
+  background: linear-gradient(
+    145deg,
+    rgba(255,255,255,0.12) 0%,
+    rgba(255,255,255,0.04) 35%,
+    rgba(20,40,80,0.35) 65%,
+    rgba(10,22,48,0.55) 100%
+  );
+  backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 14px;
+  padding: 12px 14px 12px 12px;
+  cursor: pointer;
+  color: white;
+  text-align: left;
+  min-width: 210px;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  transition: transform .22s cubic-bezier(0.23,1,0.32,1),
+              box-shadow .22s,
+              border-color .22s;
+  position: relative;
+  box-shadow:
+    0 8px 28px rgba(0,0,0,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.35),
+    inset 0 -1px 0 rgba(0,0,0,0.25);
+}
+.book-card-chip:hover {
+  transform: translateY(-6px) scale(1.015);
+  box-shadow:
+    0 18px 48px rgba(0,0,0,0.55),
+    inset 0 1px 0 rgba(255,255,255,0.45),
+    inset 0 -1px 0 rgba(0,0,0,0.3);
+}
+.book-card-chip.selected {
+  border-color: var(--accent, #63b3ed);
+  box-shadow:
+    0 0 0 2px var(--accent, #63b3ed),
+    0 20px 56px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(255,255,255,0.45);
+}
+
+.chip-icon {
+  font-size: 1.7rem;
+  flex-shrink: 0;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.4));
+}
+.chip-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.chip-title {
+  font-size: .92rem;
+  font-weight: 700;
+  letter-spacing: .01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chip-meta {
+  font-size: .68rem;
+  opacity: .58;
+  letter-spacing: .015em;
+}
+.chip-badge {
+  font-size: .62rem;
+  padding: 3px 9px;
+  border-radius: 999px;
+  color: rgba(0,0,0,.8);
+  font-weight: 700;
+  white-space: nowrap;
+  align-self: flex-start;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.75), rgba(255,255,255,.55));
+}
+
+/* ── RTHK News Ticker (Glass + Marquee) ───────── */
+.news-ticker {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(8, 18, 40, 0.65);
+  backdrop-filter: blur(18px);
+  border-top: 1px solid rgba(255,255,255,0.12);
+  z-index: 50;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.85);
+  overflow: hidden;
+}
+
+.ticker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 14px 2px;
+  font-size: 0.7rem;
+  opacity: 0.75;
+}
+
+.ticker-source {
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.ticker-close {
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: inherit;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+.ticker-close:hover {
+  background: rgba(255,80,80,0.35);
+}
+
+.ticker-marquee {
+  overflow: hidden;
+  white-space: nowrap;
+  padding: 6px 0;
+  position: relative;
+}
+
+.ticker-track {
+  display: inline-flex;
+  gap: 48px;
+  padding-left: 100%;
+  animation: ticker-scroll 95s linear infinite;
+}
+
+/* ── Hong Kong Weather Widget (Glass, Collapsible) ── */
+.weather-widget {
+  position: absolute;
+  top: 72px;
+  left: 18px;
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 999px;
+  padding: 4px 14px 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 25;
+  color: white;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+  transition: all 0.25s cubic-bezier(0.23,1,0.32,1);
+}
+
+.weather-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 2px 6px;
+  font-size: 0.85rem;
+}
+
+.weather-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.weather-temp {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.weather-desc {
+  opacity: 0.75;
+  font-size: 0.78rem;
+  max-width: 92px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.weather-widget.expanded {
+  border-radius: 16px;
+  padding: 10px 16px 12px 14px;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 168px;
+}
+
+.weather-details {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,0.12);
+  font-size: 0.76rem;
+}
+
+.weather-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+  opacity: 0.85;
+}
+.station {
+  font-size: 0.66rem;
+  opacity: 0.55;
+  margin-left: 4px;
+}
+
+.weather-attribution {
+  font-size: 0.62rem;
+  opacity: 0.45;
+  margin-top: 8px;
+  text-align: center;
+}
+
+.weather-close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  background: rgba(255,255,255,0.12);
+  border: none;
+  color: inherit;
+  font-size: 0.68rem;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: opacity 0.2s, background 0.2s;
+}
+.weather-close:hover {
+  opacity: 1;
+  background: rgba(255,80,80,0.35);
+}
+
+/* ── InfoPanel side navigation arrows ─────────── */
+.panel-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 45;
+  width: 40px;
+  height: 40px;
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: white;
+  font-size: 1.1rem;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+}
+.panel-nav-btn:hover {
+  background: rgba(255,255,255,0.22);
+  border-color: rgba(255,255,255,0.38);
+  transform: translateY(-50%) scale(1.1);
+}
+.panel-nav-btn.left { left: calc(50% - 420px); }
+.panel-nav-btn.right { right: calc(50% - 420px); }
+
+
+.news-ticker:hover .ticker-track {
+  animation-play-state: paused;
+}
+
+.ticker-item {
+  color: #e2e8f0;
+  text-decoration: none;
+  transition: color 0.2s;
+  font-weight: 500;
+}
+.ticker-item:hover {
+  color: #63b3ed;
+  text-decoration: underline;
+}
+
+.ticker-updated {
+  position: absolute;
+  right: 14px;
+  bottom: 4px;
+  font-size: 0.62rem;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
