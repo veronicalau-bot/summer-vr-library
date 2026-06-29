@@ -157,6 +157,39 @@ body {
   top: 72px;
 }
 
+/* ── Large centered VR entry button (overlays breathing orb) ──────────────── */
+.vr-enter-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(135deg, #00c878, #00a86b);
+  border: none;
+  color: white;
+  padding: 18px 48px;
+  border-radius: 999px;
+  font-size: 1.35rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 12px 40px rgba(0, 200, 120, 0.45),
+              0 4px 14px rgba(0, 0, 0, 0.25);
+  z-index: 40;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  white-space: nowrap;
+  pointer-events: auto;
+}
+.vr-enter-btn:hover {
+  transform: translate(-50%, -52%);
+  box-shadow: 0 18px 55px rgba(0, 200, 120, 0.6),
+              0 6px 20px rgba(0, 0, 0, 0.3);
+}
+.vr-enter-btn:active {
+  transform: translate(-50%, -48%);
+}
+
 /* ── Bottom hint ──────────────────────────────── */
 .hud-hint {
   position: absolute;

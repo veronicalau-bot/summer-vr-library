@@ -58,13 +58,12 @@ export default function App() {
           <InfoPanel />
           <AudioControls />
 
-          {/* Desktop-only VR entry button */}
+          {/* Desktop-only VR entry button - centered, large, overlays the breathing orb */}
           <button
-            className="hud-xr-btn"
+            className="vr-enter-btn"
             onClick={() => xrStore.enterVR()}
-            style={{ top: '120px', left: '18px' }}
           >
-            🥽 進入 VR
+            🥽 進入 VR 體驗
           </button>
         </>
       )}
