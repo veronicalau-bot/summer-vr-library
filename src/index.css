@@ -122,6 +122,31 @@ body {
   font-size: .8rem;
   pointer-events: auto;
 }
+.hud-xr-badge.active {
+  background: rgba(0,200,120,.35);
+  border-color: rgba(0,220,130,.65);
+}
+
+.hud-xr-btn {
+  background: linear-gradient(135deg, #00c878, #00a86b);
+  border: none;
+  color: white;
+  padding: 7px 16px;
+  border-radius: 24px;
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: transform .15s, box-shadow .15s;
+  pointer-events: auto;
+  box-shadow: 0 4px 14px rgba(0,200,120,.35);
+}
+.hud-xr-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0,200,120,.45);
+}
 
 /* ── Bottom hint ──────────────────────────────── */
 .hud-hint {
