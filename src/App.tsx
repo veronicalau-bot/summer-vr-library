@@ -11,8 +11,8 @@ import NewsTicker from './components/NewsTicker'
 import WeatherWidget from './components/WeatherWidget'
 
 // Create a single XR store instance for the app
+// Removed 'offerSession' to disable the default Meta Quest "Enter XR" button on desktop
 const xrStore = createXRStore({
-  offerSession: 'immersive-vr',
   handTracking: true,
 })
 
