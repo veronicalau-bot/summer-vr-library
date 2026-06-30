@@ -30,41 +30,45 @@ export default function InteractiveBeachBall() {
   const HOLD_DISTANCE = 0.7           // 兩手距離小於此值視為抱球
   const HOLD_RADIUS = 1.2             // 手與球中心的最大距離
 
-  // Hand tracking requires <Hands /> component in the XR tree (App.tsx)
-  // useXR() returns hands when <Hands /> is rendered
-  const xrState = useXR() as any
-  const hands: any[] = xrState.hands || xrState.inputSources?.filter((s: any) => s.hand) || []
+  // 從 XR session 獲取手掌位置（Vision Pro）
+  const xr = useXR() as any
+  
+  // 儲存上一幀手掌位置（用於計算拍擊速度）
+  const prevLeftPalm = useRef<THREE.Vector3 | null>(null)
+  const prevRightPalm = useRef<THREE.Vector3 | null>(null)
 
-  // 獲取手掌位置（使用 wrist joint）
-  const getPalmPosition = (hand: any): THREE.Vector3 | null => {
-    if (!hand?.inputSource?.hand) return null
-    const wrist = hand.inputSource.hand.get('wrist')
-    if (!wrist) return null
-    return new THREE.Vector3().copy(wrist.position)
+  // 從 inputSources 獲取手掌 wrist joint 位置
+  const getHandPositions = (): { left: THREE.Vector3 | null; right: THREE.Vector3 | null } => {
+    const result = { left: null as THREE.Vector3 | null, right: null as THREE.Vector3 | null }
+    
+    const inputSources = xr.session?.inputSources
+    if (!inputSources) return result
+
+    Array.from(inputSources).forEach((source: any) => {
+      if (source.hand) {
+        const handedness = source.handedness
+        const wrist = source.hand.get?.('wrist')
+        if (wrist && handedness) {
+          if (handedness === 'left') result.left = new THREE.Vector3().copy(wrist.position)
+          if (handedness === 'right') result.right = new THREE.Vector3().copy(wrist.position)
+        }
+      }
+    })
+
+    return result
   }
-
-  // 偵測手掌拍擊（向下速度）
-  const detectSlap = (prevPos: THREE.Vector3 | null, currPos: THREE.Vector3): number => {
-    if (!prevPos) return 0
-    return prevPos.y - currPos.y // 向下為正值
-  }
-
-  // 儲存上一幀手掌位置（用於計算速度）
-  const prevPalmPositions = useRef<Map<number, THREE.Vector3>>(new Map())
 
   useFrame(() => {
     if (!ballRef.current) return
-
     const ball = ballRef.current
 
-    // 如果被抱著，跟隨手的中間位置
-    if (isHeld && hands.length >= 2) {
-      const palm0 = getPalmPosition(hands[0])
-      const palm1 = getPalmPosition(hands[1])
-      if (palm0 && palm1) {
-        const midX = (palm0.x + palm1.x) / 2
-        const midY = (palm0.y + palm1.y) / 2
-        const midZ = (palm0.z + palm1.z) / 2
+    // 如果被雙手抱著，跟隨手的中間位置
+    if (isHeld) {
+      const { left, right } = getHandPositions()
+      if (left && right) {
+        const midX = (left.x + right.x) / 2
+        const midY = (left.y + right.y) / 2
+        const midZ = (left.z + right.z) / 2
         ball.position.set(midX, midY, midZ)
       }
       velocity.current.set(0, 0, 0)
@@ -83,8 +87,6 @@ export default function InteractiveBeachBall() {
     if (ball.position.y <= GROUND_Y) {
       ball.position.y = GROUND_Y
       velocity.current.y = Math.abs(velocity.current.y) * BOUNCE
-      
-      // 地面摩擦
       velocity.current.x *= 0.95
       velocity.current.z *= 0.95
     }
@@ -103,41 +105,43 @@ export default function InteractiveBeachBall() {
     ball.rotation.z -= velocity.current.x * 0.05
 
     // ===== Vision Pro 手勢互動 =====
-    if (hands.length === 0) return
-
+    const { left: leftPalm, right: rightPalm } = getHandPositions()
     const palmPositions: THREE.Vector3[] = []
-    hands.forEach((hand: any, idx: number) => {
-      const pos = getPalmPosition(hand)
-      if (pos) {
-        palmPositions.push(pos)
-        
-        // 偵測拍擊
-        const prevPos = prevPalmPositions.current.get(idx)
-        const slapSpeed = detectSlap(prevPos || null, pos)
-        
+    if (leftPalm) palmPositions.push(leftPalm)
+    if (rightPalm) palmPositions.push(rightPalm)
+
+    // 偵測拍擊（單手）
+    ;[
+      { pos: leftPalm, prev: prevLeftPalm },
+      { pos: rightPalm, prev: prevRightPalm }
+    ].forEach(({ pos, prev }) => {
+      if (!pos) return
+
+      const prevPos = prev.current
+      if (prevPos) {
+        const slapSpeed = prevPos.y - pos.y // 向下為正
+
         // 手掌在球上方且向下速度大於閾值
         if (
           slapSpeed > SLAP_THRESHOLD &&
           pos.y > ball.position.y &&
           pos.distanceTo(ball.position) < 1.0
         ) {
-          // 拍擊：給向下的力
+          // 拍擊：給向下的力 + 少量水平偏移
           velocity.current.y = -slapSpeed * 0.4
           velocity.current.x = (pos.x - ball.position.x) * 0.3
           velocity.current.z = (pos.z - ball.position.z) * 0.3
         }
-        
-        prevPalmPositions.current.set(idx, pos.clone())
       }
+      prev.current = pos.clone()
     })
 
     // 雙手抱球判斷
     if (palmPositions.length >= 2) {
       const dist = palmPositions[0].distanceTo(palmPositions[1])
-      
       const ballDist0 = palmPositions[0].distanceTo(ball.position)
       const ballDist1 = palmPositions[1].distanceTo(ball.position)
-      
+
       if (
         dist < HOLD_DISTANCE &&
         ballDist0 < HOLD_RADIUS &&
@@ -148,13 +152,12 @@ export default function InteractiveBeachBall() {
       }
     }
 
-    // 雙手分開或離開球體 → 釋放
+    // 雙手分開 → 釋放
     if (isHeld && palmPositions.length >= 2) {
       const dist = palmPositions[0].distanceTo(palmPositions[1])
       if (dist > HOLD_DISTANCE * 1.5) {
         setIsHeld(false)
-        // 釋放時給一點向上的初速度
-        velocity.current.y = 0.1
+        velocity.current.y = 0.1 // 釋放時給一點向上的初速度
       }
     }
   })
@@ -166,7 +169,8 @@ export default function InteractiveBeachBall() {
     ball.position.set(0, 1.5, -6)
     velocity.current.set(0, 0, 0)
     setIsHeld(false)
-    prevPalmPositions.current.clear()
+    prevLeftPalm.current = null
+    prevRightPalm.current = null
   }
 
   // 點擊球體可手動重置（開發測試用）
