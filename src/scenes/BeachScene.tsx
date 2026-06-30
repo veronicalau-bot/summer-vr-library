@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { useAppStore } from '../store/useAppStore'
 import BreathingOrb from './BreathingOrb'
+import InteractiveBeachBall from './InteractiveBeachBall'
 
 const PANORAMA_GLB_URL = 'https://firebasestorage.googleapis.com/v0/b/orientation2026-5dcd5.firebasestorage.app/o/free_hdri_background_realistic_beach.glb?alt=media&token=37f8ab43-808c-4ae4-8d53-e6cb08f3c662'
 
@@ -81,6 +82,9 @@ export default function BeachScene() {
 
       {/* 呼吸之球 - VR 靜觀練習（只在 VR 內渲染） */}
       <BreathingOrb />
+
+      {/* 可互動的沙灘球 - 單手抓取 + 重力彈跳 */}
+      <InteractiveBeachBall />
 
       {/* Render Sky only as fallback when panorama GLB is unavailable. */}
       {!panoramaReady && (
