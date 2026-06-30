@@ -43,6 +43,12 @@ export default function App() {
           <Suspense fallback={null}>
             <BeachScene />
           </Suspense>
+          {/* 
+            TODO: Add hand tracking support
+            For Vision Pro hand tracking, add: <Hands />
+            For controller support (Vive/Quest), add: <Controllers />
+            Note: @react-three/xr v6 API may differ - check docs for correct usage
+          */}
         </XR>
       </Canvas>
 
