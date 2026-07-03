@@ -13,45 +13,69 @@ function PanoramaBackground({ onReady }: { onReady: (ok: boolean) => void }) {
 
   useEffect(() => {
     let cancelled = false
+    let loadToken = 0
     const panoramaRoot = new THREE.Group()
     scene.add(panoramaRoot)
 
     const loader = new GLTFLoader()
     loader.setCrossOrigin('anonymous')
-    loader.load(
-      PANORAMA_GLB_URL,
-      (gltf) => {
-        if (cancelled) return
 
-        const panorama = gltf.scene
-        panorama.position.set(0, -1.5, -40)
-        panorama.scale.setScalar(25)
-        panorama.rotation.y = Math.PI / 2
+    const tryLoad = (retriesLeft: number) => {
+      const token = ++loadToken
+      const timeoutId = window.setTimeout(() => {
+        if (cancelled || token !== loadToken) return
+        if (retriesLeft > 0) {
+          tryLoad(retriesLeft - 1)
+        } else {
+          onReady(false)
+        }
+      }, 12000)
 
-        panorama.traverse((obj) => {
-          if (!(obj as THREE.Mesh).isMesh) return
+      loader.load(
+        PANORAMA_GLB_URL,
+        (gltf) => {
+          if (cancelled || token !== loadToken) return
+          clearTimeout(timeoutId)
 
-          const mesh = obj as THREE.Mesh
-          mesh.renderOrder = -1
-          mesh.castShadow = false
-          mesh.receiveShadow = false
+          const panorama = gltf.scene
+          panorama.position.set(0, -1.5, -40)
+          panorama.scale.setScalar(25)
+          panorama.rotation.y = Math.PI / 2
 
-          const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
-          mats.forEach((mat) => {
-            mat.side = THREE.DoubleSide
-            mat.depthWrite = false
-            mat.needsUpdate = true
+          panorama.traverse((obj) => {
+            if (!(obj as THREE.Mesh).isMesh) return
+
+            const mesh = obj as THREE.Mesh
+            mesh.renderOrder = -1
+            mesh.castShadow = false
+            mesh.receiveShadow = false
+
+            const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+            mats.forEach((mat) => {
+              mat.side = THREE.DoubleSide
+              mat.depthWrite = false
+              mat.needsUpdate = true
+            })
           })
-        })
 
-        panoramaRoot.add(panorama)
-        onReady(true)
-      },
-      undefined,
-      () => {
-        if (!cancelled) onReady(false)
-      }
-    )
+          panoramaRoot.clear()
+          panoramaRoot.add(panorama)
+          onReady(true)
+        },
+        undefined,
+        () => {
+          clearTimeout(timeoutId)
+          if (cancelled || token !== loadToken) return
+          if (retriesLeft > 0) {
+            tryLoad(retriesLeft - 1)
+          } else {
+            onReady(false)
+          }
+        }
+      )
+    }
+
+    tryLoad(1)
 
     return () => {
       cancelled = true
@@ -98,10 +122,18 @@ export default function BeachScene() {
       )}
 
       {/* Lighting */}
-      <ambientLight intensity={1.6} color="#ffffff" />
-      <directionalLight position={[12, 22, -8]} intensity={1.8} color="#fffbf0" />
+      <ambientLight intensity={1.2} color="#ffffff" />
+      <directionalLight position={[12, 22, -8]} intensity={1.2} color="#fffbf0" />
       <directionalLight position={[-8, 10, 12]} intensity={0.9} color="#d6edff" />
-      <directionalLight position={[0, -4, 0]} intensity={0.6} color="#f8e8c0" />
+      <directionalLight position={[0, -4, 0]} intensity={0.35} color="#f8e8c0" />
+
+      {/* Fallback ground prevents “white void” perception when panorama fails */}
+      {!panoramaReady && (
+        <mesh rotation-x={-Math.PI / 2} position={[0, -2.5, 0]}>
+          <planeGeometry args={[300, 300]} />
+          <meshStandardMaterial color="#8ec5d1" roughness={1} metalness={0} />
+        </mesh>
+      )}
 
       {/* 3-D book wall removed — books now shown as HTML overlay (BookList) */}
 

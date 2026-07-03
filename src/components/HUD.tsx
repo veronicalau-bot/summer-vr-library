@@ -6,13 +6,19 @@ import { useAppStore } from '../store/useAppStore'
 export default function HUD() {
   const { selectedBook } = useAppStore()
   const [xrSupported, setXrSupported] = useState(false)
+  const [xrLabel, setXRLabel] = useState('VR 已就緒')
 
   // We still detect support for showing/hiding the button
   useEffect(() => {
     if ('xr' in navigator && navigator.xr) {
-      navigator.xr
-        .isSessionSupported('immersive-vr')
-        .then((ok) => setXrSupported(ok))
+      Promise.all([
+        navigator.xr.isSessionSupported('immersive-vr').catch(() => false),
+        navigator.xr.isSessionSupported('immersive-ar').catch(() => false),
+      ])
+        .then(([vr, ar]) => {
+          setXrSupported(vr || ar)
+          setXRLabel(vr ? 'VR 已就緒' : ar ? 'AR 已就緒' : 'XR 不支援')
+        })
         .catch(() => setXrSupported(false))
     }
   }, [])
@@ -28,7 +34,7 @@ export default function HUD() {
             <div className="hud-logo-sub">在陽光沙灘上，發現你的下一本好書</div>
           </div>
         </div>
-        {xrSupported && <span className="hud-xr-badge left">🥽 VR 已就緒</span>}
+        {xrSupported && <span className="hud-xr-badge left">🥽 {xrLabel}</span>}
       </header>
 
       {/* ── Bottom hint (hidden when book panel open) ── */}
@@ -40,7 +46,7 @@ export default function HUD() {
           <span className="hint-sep">·</span>
           <span>👆 點選書卡查看詳情</span>
           {xrSupported && <span className="hint-sep">·</span>}
-          {xrSupported && <span>🥽 按「進入 VR」體驗沉浸式閱讀</span>}
+          {xrSupported && <span>🥽 按「進入 XR」體驗沉浸式閱讀</span>}
         </footer>
       )}
     </>
