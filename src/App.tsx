@@ -13,7 +13,27 @@ import { detectXRCapabilities } from './xr/DeviceCapabilities'
 import { getSessionStrategy } from './xr/SessionStrategy'
 
 // Create a single XR store instance for the app
-const xrStore = createXRStore()
+const xrStore = createXRStore({
+  // Keep session init minimal for maximum headset/browser compatibility.
+  // Some runtimes (notably certain Vive browser/runtime combos) are unstable
+  // when many optional XR features are requested.
+  customSessionInit: {
+    requiredFeatures: [],
+    optionalFeatures: ['local-floor'],
+  },
+  handTracking: false,
+  anchors: false,
+  layers: false,
+  meshDetection: false,
+  planeDetection: false,
+  hitTest: false,
+  domOverlay: false,
+})
+
+function isLikelyVive(): boolean {
+  const ua = navigator.userAgent.toLowerCase()
+  return ua.includes('vive') || ua.includes('htc')
+}
 
 export default function App() {
   // Track XR session state OUTSIDE the <XR> tree
@@ -53,18 +73,32 @@ export default function App() {
 
   const enterXR = async () => {
     setXRError(null)
-    if (!entryMode) {
+
+    if (!('xr' in navigator) || !navigator.xr) {
       setXRError('此裝置或瀏覽器目前不支援 WebXR')
       return
     }
 
     try {
+      const forceViveVR = isLikelyVive()
+      let mode = entryMode
+
+      if (forceViveVR) {
+        const viveVRSupported = await navigator.xr.isSessionSupported('immersive-vr').catch(() => false)
+        mode = viveVRSupported ? 'immersive-vr' : mode
+      }
+
+      if (!mode) {
+        setXRError('此裝置或瀏覽器目前不支援可用的 XR 模式')
+        return
+      }
+
       const store = xrStore as unknown as {
         enterVR: () => Promise<void>
         enterAR?: () => Promise<void>
       }
 
-      if (entryMode === 'immersive-vr') {
+      if (mode === 'immersive-vr') {
         await store.enterVR()
         return
       }
