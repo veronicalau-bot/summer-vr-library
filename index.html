@@ -66,12 +66,12 @@
         </select>
       </div>
 
-      <!-- Single-book carousel -->
-      <div id="book-carousel" aria-label="書目輪播">
-        <button id="carousel-prev" aria-label="上一本">◀</button>
-        <div id="carousel-card" aria-live="polite"></div>
-        <button id="carousel-next" aria-label="下一本">▶</button>
+      <div id="books-carousel" aria-label="書目輪播">
+        <button id="books-prev" class="books-nav" type="button" aria-label="上一冊">◀</button>
+        <div id="books-grid" role="list" aria-live="polite" aria-label="書目列表"></div>
+        <button id="books-next" class="books-nav" type="button" aria-label="下一冊">▶</button>
       </div>
+      <p id="books-index" aria-live="polite"></p>
       <p id="books-error" hidden role="alert"></p>
     </section>
 

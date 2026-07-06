@@ -22,9 +22,45 @@ async function main() {
   const btnEnterVR    = document.getElementById('btn-enter-vr');
   const btnLabel      = btnEnterVR.querySelector('.btn-label');
   const xrStatus      = document.getElementById('xr-status');
-  const carouselCard  = document.getElementById('carousel-card');
+  const booksGrid     = document.getElementById('books-grid');
   const booksError    = document.getElementById('books-error');
+  const booksPrev     = document.getElementById('books-prev');
+  const booksNext     = document.getElementById('books-next');
+  const booksIndex    = document.getElementById('books-index');
   const tagFilter     = document.getElementById('tag-filter');
+
+  let filteredBooks = [];
+  let currentIndex = 0;
+
+  function renderCurrentBook() {
+    if (filteredBooks.length === 0) {
+      renderCards([], booksGrid);
+      booksIndex.textContent = '0 / 0';
+      booksPrev.disabled = true;
+      booksNext.disabled = true;
+      return;
+    }
+
+    currentIndex = (currentIndex + filteredBooks.length) % filteredBooks.length;
+    renderCards([filteredBooks[currentIndex]], booksGrid);
+    booksIndex.textContent = `${currentIndex + 1} / ${filteredBooks.length}`;
+
+    const single = filteredBooks.length === 1;
+    booksPrev.disabled = single;
+    booksNext.disabled = single;
+  }
+
+  booksPrev.addEventListener('click', () => {
+    if (filteredBooks.length <= 1) return;
+    currentIndex -= 1;
+    renderCurrentBook();
+  });
+
+  booksNext.addEventListener('click', () => {
+    if (filteredBooks.length <= 1) return;
+    currentIndex += 1;
+    renderCurrentBook();
+  });
 
   /* ── 1. Init 3D scene + fetch books (parallel) ────────── */
   const canvas = document.getElementById('bg-canvas');
@@ -98,14 +134,11 @@ async function main() {
   /* ── 3. Render book cards ─────────────────────────────── */
   if (booksResult.status === 'fulfilled') {
     const books = booksResult.value;
-    renderCards(books, carouselCard);
-    setupFilters(books, carouselCard, tagFilter);
-
-    // Carousel arrow buttons
-    const prevBtn = document.getElementById('carousel-prev');
-    const nextBtn = document.getElementById('carousel-next');
-    prevBtn.addEventListener('click', () => showCarouselIndex(-1));
-    nextBtn.addEventListener('click', () => showCarouselIndex(1));
+    setupFilters(books, filtered => {
+      filteredBooks = filtered;
+      currentIndex = 0;
+      renderCurrentBook();
+    }, tagFilter);
   } else {
     console.error('[main] Books fetch failed:', booksResult.reason);
     booksError.textContent = '書目資料載入失敗，請確認網路連線後重新整理。';

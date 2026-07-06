@@ -145,18 +145,12 @@ export function createCard(book) {
   return card;
 }
 
-/* ── Carousel (single-book view) ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── */
-
-let _currentBooks = [];
-let _currentIndex = 0;
+/* ── Render + filter ─────────────────────────────────────── */
 
 /**
- * Show a single book in the carousel.
+ * Replace the grid contents with cards for the given books array.
  */
 export function renderCards(books, container) {
-  _currentBooks = books;
-  _currentIndex = books.length ? 0 : -1;
-
   while (container.firstChild) container.removeChild(container.firstChild);
 
   if (books.length === 0) {
@@ -167,25 +161,15 @@ export function renderCards(books, container) {
     return;
   }
 
-  container.appendChild(createCard(books[0]));
+  const frag = document.createDocumentFragment();
+  books.forEach(book => frag.appendChild(createCard(book)));
+  container.appendChild(frag);
 }
 
 /**
- * Move carousel to the next/previous book.
+ * Wire up the tag selector and return filtered books via callback.
  */
-export function showCarouselIndex(delta) {
-  if (!_currentBooks.length) return;
-  _currentIndex = (_currentIndex + delta + _currentBooks.length) % _currentBooks.length;
-
-  const container = document.getElementById('carousel-card');
-  while (container.firstChild) container.removeChild(container.firstChild);
-  container.appendChild(createCard(_currentBooks[_currentIndex]));
-}
-
-/**
- * Wire up the tag selector to re-render the grid.
- */
-export function setupFilters(books, container, tagSelect) {
+export function setupFilters(books, onFiltered, tagSelect) {
   // Populate tag options
   const allTags = [...new Set(books.flatMap(b => b.tags))].sort();
   allTags.forEach(tag => {
@@ -201,10 +185,11 @@ export function setupFilters(books, container, tagSelect) {
       const matchT = !t || b.tags.includes(t);
       return matchT;
     });
-    renderCards(filtered, container);
+    onFiltered(filtered);
   }
 
   tagSelect.addEventListener('change', apply);
+  apply();
 }
 
 /* ── Small helpers (no innerHTML) ────────────────────────── */
