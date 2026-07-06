@@ -1,13 +1,86 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>summer-vr-library</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0a1628">
+  <title>Beach Book Lounge · 沙灘書屋</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- PapaParse — CSV parsing (must load before module scripts) -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <!-- qrcode — QR generation (must load before module scripts) -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+
+  <!-- Three.js via importmap (r165) -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+
+  <!-- ── Three.js background canvas ────────────────────────── -->
+  <canvas id="bg-canvas" aria-hidden="true"></canvas>
+
+  <!-- ── Loading screen ─────────────────────────────────────── -->
+  <div id="loading-screen" role="status" aria-live="polite">
+    <div class="loader-content">
+      <div class="loader-ring" aria-hidden="true"></div>
+      <p id="loading-text">載入中…</p>
+    </div>
+  </div>
+
+  <!-- ── Main UI overlay ────────────────────────────────────── -->
+  <div id="ui-overlay">
+
+    <header id="site-header">
+      <div id="brand">
+        <span class="brand-icon" aria-hidden="true">🏖</span>
+        <h1>Beach Book Lounge</h1>
+      </div>
+      <div id="xr-controls">
+        <span id="xr-status" role="status" aria-live="polite"></span>
+        <button id="btn-enter-vr" disabled aria-label="進入 XR 沙灘">
+          <span class="btn-icon" aria-hidden="true">🥽</span>
+          <span class="btn-label">進入 XR 沙灘</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Book cards panel -->
+    <section id="books-section" aria-label="推薦書目">
+      <div id="books-filter">
+        <select id="tag-filter" aria-label="篩選分類">
+          <option value="">所有分類</option>
+        </select>
+      </div>
+
+      <div id="books-grid" role="list" aria-live="polite" aria-label="書目列表"></div>
+      <p id="books-error" hidden role="alert"></p>
+    </section>
+
+  </div><!-- /#ui-overlay -->
+
+  <!-- ── Book detail modal ──────────────────────────────────── -->
+  <div id="book-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" hidden>
+    <div id="modal-backdrop" tabindex="-1" aria-hidden="true"></div>
+    <div id="modal-content">
+      <button id="modal-close" aria-label="關閉詳情">✕</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
 </html>
