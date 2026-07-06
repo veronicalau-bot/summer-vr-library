@@ -446,13 +446,13 @@ export class BeachScene {
 
       if (state.hitCooldown > 0) state.hitCooldown -= dt;
 
-      // Hand/controller "pat" when moving quickly near the ball.
+      // Hand/controller "pat" when moving near the ball.
       if (this._ballGrabbedBy < 0 && state.hitCooldown <= 0) {
         const dist = pos.distanceTo(this._ball.position);
         const speed = velocity.length();
-        if (dist <= this._ballRadius + 0.16 && speed > 0.85) {
-          const impulse = this._tmpV3.copy(velocity).multiplyScalar(0.06);
-          impulse.y += 0.05;
+        if (dist <= this._ballRadius + 0.28 && speed > 0.45) {
+          const impulse = this._tmpV3.copy(velocity).multiplyScalar(0.08);
+          impulse.y += 0.06;
           this._applyBallImpulse(impulse);
           state.hitCooldown = 0.12;
         }
@@ -467,8 +467,27 @@ export class BeachScene {
     if (!ctrl) return;
 
     const ctrlPos = this._tmpV1.setFromMatrixPosition(ctrl.matrixWorld);
-    const dist = ctrlPos.distanceTo(this._ball.position);
-    if (dist <= this._ballRadius + this._ballGrabRadius) {
+
+    // (1) Near grab: hand physically close to the ball.
+    let canGrab = ctrlPos.distanceTo(this._ball.position)
+      <= this._ballRadius + this._ballGrabRadius;
+
+    // (2) Far grab: pointer ray aimed at (or near) the ball.
+    //     Uses a generous tolerance so aiming does not need to be pixel-perfect.
+    if (!canGrab) {
+      const dir = this._tmpV2.set(0, 0, -1)
+        .applyQuaternion(this._tmpQ1.setFromRotationMatrix(ctrl.matrixWorld))
+        .normalize();
+      this._raycaster.set(ctrlPos, dir);
+      this._raycaster.far = 15;
+      const along = this._tmpV3.copy(this._ball.position).sub(ctrlPos).dot(dir);
+      const rayDist = this._raycaster.ray.distanceToPoint(this._ball.position);
+      if (along > 0 && along < 15 && rayDist <= this._ballRadius * 2.2) {
+        canGrab = true;
+      }
+    }
+
+    if (canGrab) {
       this._ballGrabbedBy = index;
       this._ballVelocity.set(0, 0, 0);
     }
