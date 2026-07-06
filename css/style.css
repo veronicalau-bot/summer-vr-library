@@ -105,32 +105,43 @@ html, body {
 
 /* ── XR button area ─────────────────────────────────────── */
 #xr-controls {
+  position: fixed;
+  left: 50%;
+  top: 52%;
+  transform: translate(-50%, -50%);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex-shrink: 0;
+  pointer-events: auto;
+  z-index: 25;
 }
 
 #xr-status {
-  font-size: 11px;
+  order: 2;
+  font-size: 12px;
   color: var(--clr-muted);
   white-space: nowrap;
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
 }
 
 #btn-enter-vr {
+  order: 1;
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 9px 20px;
+  gap: 10px;
+  padding: 14px 30px;
   background: linear-gradient(135deg, var(--clr-primary), var(--clr-primary-dk));
   color: #fff;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 700;
   border: none;
   border-radius: var(--radius-pill);
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(255, 140, 66, 0.40);
+  box-shadow: 0 10px 34px rgba(255, 140, 66, 0.48);
   transition: transform var(--transition), box-shadow var(--transition),
               opacity var(--transition);
   white-space: nowrap;
@@ -149,7 +160,7 @@ html, body {
   box-shadow: none;
 }
 
-.btn-icon { font-size: 16px; line-height: 1; }
+.btn-icon { font-size: 20px; line-height: 1; }
 
 /* ── Books section ──────────────────────────────────────── */
 #books-section {
@@ -488,8 +499,10 @@ html, body {
   #site-header h1 { font-size: 14px; }
 
   /* Show icon only on narrow screens */
-  .btn-label { display: none; }
-  #btn-enter-vr { padding: 9px 13px; }
+  .btn-label { display: inline; }
+  #xr-controls { top: 56%; }
+  #btn-enter-vr { padding: 12px 24px; font-size: 15px; }
+  .btn-icon { font-size: 18px; }
 
   #books-section  { padding: 10px 12px 12px; max-height: 55vh; }
   #books-carousel { grid-template-columns: 1fr auto 1fr; gap: 10px; }
