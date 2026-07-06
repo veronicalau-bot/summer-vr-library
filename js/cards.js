@@ -26,19 +26,27 @@ function qrDataURL(url, px) {
       reject(new Error('QRCode library not loaded'));
       return;
     }
-    QRCode.toDataURL(
-      url,
-      {
-        width:  px,
-        margin: 1,
-        color:  { dark: '#0f1e37', light: '#ffffff' },
-        errorCorrectionLevel: 'M',
-      },
-      (err, dataUrl) => {
-        if (err) reject(err);
-        else resolve(dataUrl);
-      },
-    );
+
+    // Use 'L' (low) error correction — more tolerant for longer URLs
+    // such as https://lib.hkapa.edu/bib/991002227409204326
+    const opts = {
+      width:  px,
+      margin: 1,
+      color:  { dark: '#0f1e37', light: '#ffffff' },
+      errorCorrectionLevel: 'L',
+    };
+
+    QRCode.toDataURL(url, opts, (err, dataUrl) => {
+      if (!err && dataUrl) {
+        resolve(dataUrl);
+        return;
+      }
+      // Fallback: try even smaller size if the first attempt fails
+      QRCode.toDataURL(url, { ...opts, width: Math.max(64, Math.floor(px * 0.7)) }, (err2, dataUrl2) => {
+        if (err2 || !dataUrl2) reject(err2 || new Error('QR generation failed'));
+        else resolve(dataUrl2);
+      });
+    });
   });
 }
 
