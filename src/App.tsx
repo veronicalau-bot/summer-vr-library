@@ -12,14 +12,12 @@ import WeatherWidget from './components/WeatherWidget'
 import { detectXRCapabilities } from './xr/DeviceCapabilities'
 import { getSessionStrategy } from './xr/SessionStrategy'
 
-// Create a single XR store instance for the app
+// Create a single XR store instance for the app.
+// Empty feature arrays = maximum runtime compatibility (Vive, Quest, Vision Pro).
 const xrStore = createXRStore({
-  // Keep session init minimal for maximum headset/browser compatibility.
-  // Some runtimes (notably certain Vive browser/runtime combos) are unstable
-  // when many optional XR features are requested.
   customSessionInit: {
     requiredFeatures: [],
-    optionalFeatures: ['local-floor'],
+    optionalFeatures: [],
   },
   handTracking: false,
   anchors: false,
@@ -30,10 +28,6 @@ const xrStore = createXRStore({
   domOverlay: false,
 })
 
-function isLikelyVive(): boolean {
-  const ua = navigator.userAgent.toLowerCase()
-  return ua.includes('vive') || ua.includes('htc')
-}
 
 export default function App() {
   // Track XR session state OUTSIDE the <XR> tree
@@ -75,41 +69,28 @@ export default function App() {
     setXRError(null)
 
     if (!('xr' in navigator) || !navigator.xr) {
-      setXRError('此裝置或瀏覽器目前不支援 WebXR')
+      setXRError('此瀏覽器不支援 WebXR')
       return
     }
 
+    const mode = entryMode
+    if (!mode) {
+      setXRError('此裝置不支援任何 XR 模式 (VR/AR)')
+      return
+    }
+
+    console.log('[XR] Entering', mode)
     try {
-      const forceViveVR = isLikelyVive()
-      let mode = entryMode
-
-      if (forceViveVR) {
-        const viveVRSupported = await navigator.xr.isSessionSupported('immersive-vr').catch(() => false)
-        mode = viveVRSupported ? 'immersive-vr' : mode
-      }
-
-      if (!mode) {
-        setXRError('此裝置或瀏覽器目前不支援可用的 XR 模式')
-        return
-      }
-
-      const store = xrStore as unknown as {
-        enterVR: () => Promise<void>
-        enterAR?: () => Promise<void>
-      }
-
       if (mode === 'immersive-vr') {
-        await store.enterVR()
-        return
-      }
-
-      if (store.enterAR) {
-        await store.enterAR()
+        await xrStore.enterVR()
       } else {
-        setXRError('目前 XR 模式與此裝置不相容')
+        await xrStore.enterAR()
       }
-    } catch {
-      setXRError('進入 XR 失敗，請確認裝置連線與瀏覽器權限')
+    } catch (err: unknown) {
+      const name = err instanceof Error ? err.name : 'Error'
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error('[XR] Entry failed:', name, msg, err)
+      setXRError(`[${name}] ${msg}`)
     }
   }
 
