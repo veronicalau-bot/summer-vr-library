@@ -234,6 +234,71 @@ html, body {
   padding: 36px 16px;
 }
 
+/* ── Single-book carousel ───────────────────────────────── */
+#book-carousel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 280px;
+  padding: 20px 60px;
+  box-sizing: border-box;
+}
+
+#book-carousel #carousel-card {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  justify-content: center;
+}
+
+#book-carousel .book-card {
+  width: 100%;
+  max-width: 420px;
+  margin: 0;
+}
+
+#carousel-prev,
+#carousel-next {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--clr-border);
+  border-radius: 50%;
+  color: #fff;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.2s ease;
+}
+
+#carousel-prev:hover,
+#carousel-next:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+#carousel-prev { left: 12px; }
+#carousel-next { right: 12px; }
+
+@media (max-width: 600px) {
+  #book-carousel {
+    padding: 20px 50px;
+  }
+  #carousel-prev,
+  #carousel-next {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+}
+
 /* ── Book card ──────────────────────────────────────────── */
 .book-card {
   /* subtle dark gradient on the card itself */
