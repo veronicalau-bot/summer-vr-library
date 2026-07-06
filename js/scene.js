@@ -9,6 +9,8 @@
 import * as THREE from 'three';
 import { GLTFLoader }  from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
+import { XRHandModelFactory }       from 'three/addons/webxr/XRHandModelFactory.js';
 
 /* GLB filename with space — encodeURIComponent handles the space only
    (parentheses are valid URI chars, not encoded). */
@@ -33,17 +35,22 @@ export class BeachScene {
     // Beach ball state (lightweight physics)
     this._ball = null;
     this._ballRadius = 0.35;
-    this._ballFloorY = -1.25;
+    this._ballFloorY = -1.25;      // desktop floor (camera at origin)
+    this._ballFloorYDesktop = -1.25;
+    this._ballFloorYXR = 0.0;      // local-floor ground is at y = 0
     this._ballVelocity = new THREE.Vector3(0, 0, 0);
     this._ballGrabbedBy = -1;
     this._ballBoundsRadius = 7.5;
+    this._ballGrabRadius = 0.45;   // how close a hand must be to grab
 
     // Desktop interaction helpers
     this._raycaster = new THREE.Raycaster();
     this._pointerNdc = new THREE.Vector2();
 
     // XR controller interaction state
-    this._controllers = [];
+    this._controllers = [];      // target-ray spaces (events + pose)
+    this._controllerGrips = [];  // grip spaces (controller mesh + physical pose)
+    this._hands = [];            // hand spaces (Vision Pro hand tracking)
     this._controllerState = [
       { history: [], lastPos: new THREE.Vector3(), initialized: false, hitCooldown: 0 },
       { history: [], lastPos: new THREE.Vector3(), initialized: false, hitCooldown: 0 },
@@ -348,13 +355,67 @@ export class BeachScene {
 
   /* ── XR controller interaction ────────────────────────── */
   _setupXRControllers() {
+    const controllerModelFactory = new XRControllerModelFactory();
+    const handModelFactory       = new XRHandModelFactory();
+
     for (let i = 0; i < 2; i += 1) {
+      // Target-ray space — fires select for both controllers (trigger)
+      // and hands (pinch); also used for pose/velocity tracking.
       const ctrl = this._renderer.xr.getController(i);
       ctrl.addEventListener('selectstart', () => this._onXRSelectStart(i));
-      ctrl.addEventListener('selectend', () => this._onXRSelectEnd(i));
+      ctrl.addEventListener('selectend',   () => this._onXRSelectEnd(i));
+      ctrl.add(this._makeControllerRay());
       this._scene.add(ctrl);
       this._controllers[i] = ctrl;
+
+      // Grip space — renders the physical controller model (Vive).
+      const grip = this._renderer.xr.getControllerGrip(i);
+      grip.add(controllerModelFactory.createControllerModel(grip));
+      this._scene.add(grip);
+      this._controllerGrips[i] = grip;
+
+      // Hand space — renders tracked hands (Apple Vision Pro).
+      const hand = this._renderer.xr.getHand(i);
+      hand.add(handModelFactory.createHandModel(hand, 'mesh'));
+      this._scene.add(hand);
+      this._hands[i] = hand;
     }
+  }
+
+  /** Small pointer ray so users can see where a controller/hand aims. */
+  _makeControllerRay() {
+    const geom = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, 0, -1),
+    ]);
+    const mat = new THREE.LineBasicMaterial({
+      color: 0xffd166,
+      transparent: true,
+      opacity: 0.6,
+    });
+    const line = new THREE.Line(geom, mat);
+    line.name = 'controller-ray';
+    line.scale.z = 1.2;
+    return line;
+  }
+
+  /** Reposition the ball for the current mode (desktop vs XR reach). */
+  _placeBallForMode() {
+    if (!this._ball) return;
+
+    if (this._xrActive) {
+      // Local-floor: user stands on y = 0. Drop the ball in front,
+      // at roughly chest height, so it is easy to reach, hit and throw.
+      this._ballFloorY = this._ballFloorYXR;
+      this._ball.position.set(0, 1.1, -0.9);
+      this._ballVelocity.set(0, -0.2, 0);
+    } else {
+      // Desktop: camera sits at origin, floor is below.
+      this._ballFloorY = this._ballFloorYDesktop;
+      this._ball.position.set(0.5, this._ballFloorY + this._ballRadius, -2.4);
+      this._ballVelocity.set(0, 0, 0);
+    }
+    this._ballGrabbedBy = -1;
   }
 
   _updateXRControllerState(dt) {
@@ -407,7 +468,7 @@ export class BeachScene {
 
     const ctrlPos = this._tmpV1.setFromMatrixPosition(ctrl.matrixWorld);
     const dist = ctrlPos.distanceTo(this._ball.position);
-    if (dist <= this._ballRadius + 0.25) {
+    if (dist <= this._ballRadius + this._ballGrabRadius) {
       this._ballGrabbedBy = index;
       this._ballVelocity.set(0, 0, 0);
     }
@@ -494,7 +555,17 @@ export class BeachScene {
   }
 
   /* ── Public API ────────────────────────────────────────── */
-  setXRActive(active) { this._xrActive = active; }
+  setXRActive(active) {
+    this._xrActive = active;
+    // Reset controller tracking so the first XR frame doesn't register
+    // a huge phantom velocity from a stale last position.
+    this._controllerState.forEach(s => {
+      s.initialized = false;
+      s.history.length = 0;
+      s.hitCooldown = 0;
+    });
+    this._placeBallForMode();
+  }
 
   /** Call after XR session ends to restore 2D render dimensions. */
   restoreSize() { this._handleResize(); }
