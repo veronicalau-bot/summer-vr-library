@@ -40,8 +40,8 @@ export class BeachScene {
     this._ballFloorYXR = 0.0;      // local-floor ground is at y = 0
     this._ballVelocity = new THREE.Vector3(0, 0, 0);
     this._ballGrabbedBy = -1;
-    this._ballBoundsRadius = 2.2;   // stay within arm's/step reach
-    this._ballReturnRadius = 1.5;   // beyond this (when resting) it rolls back
+    this._ballBoundsRadius = 4.4;   // stay within arm's/step reach
+    this._ballReturnRadius = 3.0;   // beyond this (when resting) it rolls back
     this._ballGrabRadius = 0.6;    // how close a hand must be to grab
     this._ballAimTolerance = 2.8;   // ray-aim grab tolerance (× radius)
     this._ballBaseScale = 1;        // set when the model loads
