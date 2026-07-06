@@ -365,26 +365,6 @@ html, body {
   color: var(--clr-muted);
 }
 
-/* ── QR code ────────────────────────────────────────────── */
-.qr-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-}
-
-.qr-label {
-  font-size: 9px;
-  color: var(--clr-muted);
-  user-select: none;
-  text-align: center;
-}
-
-.qr-img {
-  border-radius: 4px;
-  background: #fff;
-}
-
 /* ── Modal ──────────────────────────────────────────────── */
 #book-modal {
   position: fixed;
@@ -470,24 +450,6 @@ html, body {
 }
 
 #modal-body .btn-link { align-self: flex-start; }
-
-.modal-qr {
-  align-self: center;
-  text-align: center;
-  padding: 16px 24px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--clr-border);
-  border-radius: 14px;
-}
-
-.modal-qr .qr-label {
-  font-size: 11px;
-  margin-bottom: 10px;
-}
-
-.modal-qr .qr-img {
-  border-radius: 8px;
-}
 
 /* ── Responsive ─────────────────────────────────────────── */
 @media (max-width: 600px) {

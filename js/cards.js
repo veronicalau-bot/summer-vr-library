@@ -1,99 +1,11 @@
 /**
- * cards.js — Book card rendering, QR auto-generation, and modal.
- *
- * QR codes are generated client-side from each book's book_link
- * using the globally loaded qrcode library (CDN).
+ * cards.js — Book card rendering and modal.
  *
  * Security notes:
  *   - All text content set via .textContent (never innerHTML with user data)
  *   - External URLs validated upstream in data.js (https:// only)
  *   - Links have rel="noopener noreferrer" and target="_blank"
  */
-
-/* ── QR helpers ──────────────────────────────────────────── */
-
-/**
- * Generate a QR code as a data URL for the given https URL.
- * Uses callback-style API of qrcode@1.5.x for broad compatibility.
- * @param {string} url   - The HTTPS URL to encode
- * @param {number} px    - Output pixel size (use 2× for retina)
- * @returns {Promise<string>}
- */
-function qrDataURL(url, px) {
-  return new Promise((resolve, reject) => {
-    /* global QRCode */
-    if (typeof QRCode === 'undefined' || !QRCode || !QRCode.toDataURL) {
-      reject(new Error('QRCode library not loaded'));
-      return;
-    }
-
-    // Use 'L' (low) error correction — more tolerant for longer URLs
-    // such as https://lib.hkapa.edu/bib/991002227409204326
-    const opts = {
-      width:  px,
-      margin: 1,
-      color:  { dark: '#0f1e37', light: '#ffffff' },
-      errorCorrectionLevel: 'L',
-    };
-
-    QRCode.toDataURL(url, opts, (err, dataUrl) => {
-      if (!err && dataUrl) {
-        resolve(dataUrl);
-        return;
-      }
-      // Fallback: try even smaller size if the first attempt fails
-      QRCode.toDataURL(url, { ...opts, width: Math.max(64, Math.floor(px * 0.7)) }, (err2, dataUrl2) => {
-        if (err2 || !dataUrl2) reject(err2 || new Error('QR generation failed'));
-        else resolve(dataUrl2);
-      });
-    });
-  });
-}
-
-/**
- * Build a QR wrapper element (label + <img>).
- * Image src is populated asynchronously.
- *
- * @param {string} url        - URL to encode
- * @param {number} displayPx  - CSS display size in px
- * @param {string} [label]
- */
-function makeQREl(url, displayPx, label = '掃描 QR') {
-  const wrap = document.createElement('div');
-  wrap.className = 'qr-wrap';
-
-  if (!url) {
-    // No valid link → hide QR area entirely
-    wrap.style.display = 'none';
-    return wrap;
-  }
-
-  const lbl = document.createElement('span');
-  lbl.className = 'qr-label';
-  lbl.textContent = label;
-  wrap.appendChild(lbl);
-
-  const img = document.createElement('img');
-  img.alt    = 'QR Code';
-  img.width  = displayPx;
-  img.height = displayPx;
-  img.className = 'qr-img';
-  wrap.appendChild(img);
-
-  // Generate at 2× for retina; display at displayPx
-  qrDataURL(url, displayPx * 2)
-    .then(src  => { img.src = src; })
-    .catch(()  => {
-      // Graceful fallback: show a small message instead of a blank square
-      img.style.display = 'none';
-      const err = document.createElement('span');
-      err.className = 'qr-error';
-      err.textContent = 'QR 無法產生';
-      wrap.appendChild(err);
-    });
-
-  return wrap;
-}
 
 /* ── Modal ───────────────────────────────────────────────── */
 
@@ -131,14 +43,10 @@ function openModal(book) {
     body.appendChild(p);
   }
 
-  // Link + large QR
+  // Link
   if (book.book_link) {
     const link = makeLink(book.book_link, '前往連結');
     body.appendChild(link);
-
-    const qrEl = makeQREl(book.book_link, 160, '掃描 QR 前往');
-    qrEl.classList.add('modal-qr');
-    body.appendChild(qrEl);
   }
 
   modal.hidden = false;
@@ -205,7 +113,7 @@ export function createCard(book) {
 
   card.appendChild(info);
 
-  // ── Actions (link + compact QR) ─────────────────────────
+  // ── Actions (link only) ─────────────────────────────────
   const actions = document.createElement('div');
   actions.className = 'card-actions';
 
@@ -214,7 +122,6 @@ export function createCard(book) {
     // Prevent card click handler from firing when clicking the link
     link.addEventListener('click', e => e.stopPropagation());
     actions.appendChild(link);
-    actions.appendChild(makeQREl(book.book_link, 48, '掃描 QR'));
   } else {
     const noLink = document.createElement('span');
     noLink.className   = 'no-link';
