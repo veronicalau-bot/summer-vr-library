@@ -22,7 +22,7 @@ async function main() {
   const btnEnterVR    = document.getElementById('btn-enter-vr');
   const btnLabel      = btnEnterVR.querySelector('.btn-label');
   const xrStatus      = document.getElementById('xr-status');
-  const booksGrid     = document.getElementById('books-grid');
+  const carouselCard  = document.getElementById('carousel-card');
   const booksError    = document.getElementById('books-error');
   const tagFilter     = document.getElementById('tag-filter');
 
@@ -98,8 +98,14 @@ async function main() {
   /* ── 3. Render book cards ─────────────────────────────── */
   if (booksResult.status === 'fulfilled') {
     const books = booksResult.value;
-    renderCards(books, booksGrid);
-    setupFilters(books, booksGrid, tagFilter);
+    renderCards(books, carouselCard);
+    setupFilters(books, carouselCard, tagFilter);
+
+    // Carousel arrow buttons
+    const prevBtn = document.getElementById('carousel-prev');
+    const nextBtn = document.getElementById('carousel-next');
+    prevBtn.addEventListener('click', () => showCarouselIndex(-1));
+    nextBtn.addEventListener('click', () => showCarouselIndex(1));
   } else {
     console.error('[main] Books fetch failed:', booksResult.reason);
     booksError.textContent = '書目資料載入失敗，請確認網路連線後重新整理。';

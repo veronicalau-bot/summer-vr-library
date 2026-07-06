@@ -145,12 +145,18 @@ export function createCard(book) {
   return card;
 }
 
-/* ── Render + filter ─────────────────────────────────────── */
+/* ── Carousel (single-book view) ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── */
+
+let _currentBooks = [];
+let _currentIndex = 0;
 
 /**
- * Replace the grid contents with cards for the given books array.
+ * Show a single book in the carousel.
  */
 export function renderCards(books, container) {
+  _currentBooks = books;
+  _currentIndex = books.length ? 0 : -1;
+
   while (container.firstChild) container.removeChild(container.firstChild);
 
   if (books.length === 0) {
@@ -161,9 +167,19 @@ export function renderCards(books, container) {
     return;
   }
 
-  const frag = document.createDocumentFragment();
-  books.forEach(book => frag.appendChild(createCard(book)));
-  container.appendChild(frag);
+  container.appendChild(createCard(books[0]));
+}
+
+/**
+ * Move carousel to the next/previous book.
+ */
+export function showCarouselIndex(delta) {
+  if (!_currentBooks.length) return;
+  _currentIndex = (_currentIndex + delta + _currentBooks.length) % _currentBooks.length;
+
+  const container = document.getElementById('carousel-card');
+  while (container.firstChild) container.removeChild(container.firstChild);
+  container.appendChild(createCard(_currentBooks[_currentIndex]));
 }
 
 /**
