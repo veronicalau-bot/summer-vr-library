@@ -52,8 +52,8 @@ export class BeachScene {
     this._controllerGrips = [];  // grip spaces (controller mesh + physical pose)
     this._hands = [];            // hand spaces (Vision Pro hand tracking)
     this._controllerState = [
-      { history: [], lastPos: new THREE.Vector3(), initialized: false, hitCooldown: 0 },
-      { history: [], lastPos: new THREE.Vector3(), initialized: false, hitCooldown: 0 },
+      { history: [], lastPos: new THREE.Vector3(), smoothedVel: new THREE.Vector3(), initialized: false, hitCooldown: 0 },
+      { history: [], lastPos: new THREE.Vector3(), smoothedVel: new THREE.Vector3(), initialized: false, hitCooldown: 0 },
     ];
 
     // Reusable temp objects to reduce allocations
@@ -438,6 +438,10 @@ export class BeachScene {
       const velocity = this._tmpV2.copy(pos).sub(state.lastPos).multiplyScalar(1 / Math.max(dt, 1e-4));
       state.lastPos.copy(pos);
 
+      // Smoothed instantaneous velocity — tracks the *current* motion
+      // direction so throws follow the final flick (not the wind-up).
+      state.smoothedVel.lerp(velocity, 0.5);
+
       state.history.push({
         t: now,
         pos: pos.clone(),
@@ -450,11 +454,12 @@ export class BeachScene {
       if (this._ballGrabbedBy < 0 && state.hitCooldown <= 0) {
         const dist = pos.distanceTo(this._ball.position);
         const speed = velocity.length();
-        if (dist <= this._ballRadius + 0.28 && speed > 0.45) {
-          const impulse = this._tmpV3.copy(velocity).multiplyScalar(0.08);
-          impulse.y += 0.06;
+        if (dist <= this._ballRadius + 0.30 && speed > 0.4) {
+          // Transfer most of the hand speed to the ball for a satisfying hit.
+          const impulse = this._tmpV3.copy(velocity).multiplyScalar(0.9);
+          impulse.y += 0.25;
           this._applyBallImpulse(impulse);
-          state.hitCooldown = 0.12;
+          state.hitCooldown = 0.15;
         }
       }
     }
@@ -497,25 +502,27 @@ export class BeachScene {
     if (!this._ball || this._ballGrabbedBy !== index) return;
 
     const state = this._controllerState[index];
-    const history = state?.history ?? [];
 
-    let releaseVelocity = new THREE.Vector3();
-    if (history.length >= 2) {
-      const oldest = history[0];
-      const newest = history[history.length - 1];
-      const dtMs = Math.max(1, newest.t - oldest.t);
-      releaseVelocity = newest.pos.clone().sub(oldest.pos).multiplyScalar(1000 / dtMs);
-    } else {
+    // Use the smoothed *current* hand velocity so the throw follows the
+    // final forward flick instead of averaging in the wind-up (which
+    // previously sent the ball backwards).
+    const releaseVelocity = new THREE.Vector3().copy(state?.smoothedVel ?? this._tmpV1.set(0, 0, 0));
+
+    // If the hand barely moved, throw gently along where it points.
+    if (releaseVelocity.lengthSq() < 0.09) {
       const ctrl = this._controllers[index];
       if (ctrl) {
-        releaseVelocity = this._tmpV1.set(0, 0, -1)
+        releaseVelocity.set(0, 0, -1)
           .applyQuaternion(this._tmpQ1.setFromRotationMatrix(ctrl.matrixWorld))
-          .multiplyScalar(1.8);
+          .multiplyScalar(2.0);
       }
+    } else {
+      // Amplify a little for a satisfying toss.
+      releaseVelocity.multiplyScalar(1.4);
     }
 
-    releaseVelocity.y += 0.45;
-    this._ballVelocity.copy(releaseVelocity.multiplyScalar(1.05));
+    releaseVelocity.y += 0.4;
+    this._ballVelocity.copy(releaseVelocity);
     this._ballGrabbedBy = -1;
   }
 
