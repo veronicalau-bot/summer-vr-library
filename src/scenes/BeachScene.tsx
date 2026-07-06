@@ -1,12 +1,59 @@
-﻿import { useEffect, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { useThree } from '@react-three/fiber'
-import { Sky, OrbitControls } from '@react-three/drei'
+import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { useAppStore } from '../store/useAppStore'
 import InteractiveBeachBall from './InteractiveBeachBall'
 
 const PANORAMA_GLB_URL = 'https://firebasestorage.googleapis.com/v0/b/orientation2026-5dcd5.firebasestorage.app/o/free_hdri_background_realistic_beach.glb?alt=media&token=37f8ab43-808c-4ae4-8d53-e6cb08f3c662'
+
+/**
+ * ProceduralEnvironment - a fully self-contained sky + sea that renders
+ * INSTANTLY without any network request. Guarantees every headset (including
+ * standalone HTC Vive) always shows a proper environment, even if the remote
+ * panorama GLB is slow, too large, or fails to load.
+ */
+function ProceduralEnvironment() {
+  // Vertical gradient sky via a cheap CanvasTexture (works on every GPU)
+  const skyTexture = useMemo(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 16
+    canvas.height = 256
+    const ctx = canvas.getContext('2d')!
+    const grad = ctx.createLinearGradient(0, 0, 0, 256)
+    grad.addColorStop(0, '#2f7fd1') // zenith blue
+    grad.addColorStop(0.55, '#8ec9e8') // mid sky
+    grad.addColorStop(0.8, '#d9eef7') // horizon haze
+    grad.addColorStop(1, '#f3e6c4') // warm sand horizon
+    ctx.fillStyle = grad
+    ctx.fillRect(0, 0, 16, 256)
+    const tex = new THREE.CanvasTexture(canvas)
+    tex.colorSpace = THREE.SRGBColorSpace
+    return tex
+  }, [])
+
+  return (
+    <group>
+      {/* Sky dome - always behind everything */}
+      <mesh scale={[-1, 1, 1]} renderOrder={-10}>
+        <sphereGeometry args={[300, 32, 16]} />
+        <meshBasicMaterial
+          map={skyTexture}
+          side={THREE.BackSide}
+          depthWrite={false}
+          fog={false}
+        />
+      </mesh>
+
+      {/* Sea / ground plane - always present */}
+      <mesh rotation-x={-Math.PI / 2} position={[0, -2.5, 0]} renderOrder={-9}>
+        <planeGeometry args={[600, 600]} />
+        <meshStandardMaterial color="#3f92b5" roughness={0.85} metalness={0.05} />
+      </mesh>
+    </group>
+  )
+}
 
 function PanoramaBackground({ onReady }: { onReady: (ok: boolean) => void }) {
   const { scene } = useThree()
@@ -29,7 +76,7 @@ function PanoramaBackground({ onReady }: { onReady: (ok: boolean) => void }) {
         } else {
           onReady(false)
         }
-      }, 12000)
+      }, 8000)
 
       loader.load(
         PANORAMA_GLB_URL,
@@ -97,43 +144,24 @@ function PanoramaBackground({ onReady }: { onReady: (ok: boolean) => void }) {
 // ─── Main BeachScene ──────────────────────────────────────────────────────────
 export default function BeachScene() {
   const { setSelectedBook } = useAppStore()
-  const [panoramaReady, setPanoramaReady] = useState(false)
+  const [, setPanoramaReady] = useState(false)
 
   return (
     <>
-      <PanoramaBackground onReady={setPanoramaReady} />
+      {/* Always-on self-contained environment (guarantees Vive/standalone sees a world) */}
+      <ProceduralEnvironment />
 
+      {/* Remote panorama loads on top as an enhancement; failure is harmless */}
+      <PanoramaBackground onReady={setPanoramaReady} />
 
       {/* 可互動的沙灘球 - 單手抓取 + 重力彈跳 */}
       <InteractiveBeachBall />
-
-      {/* Render Sky only as fallback when panorama GLB is unavailable. */}
-      {!panoramaReady && (
-        <Sky
-          distance={450000}
-          sunPosition={[0.9, 0.9, -1]}
-          inclination={0.45}
-          azimuth={0.22}
-          rayleigh={0.35}
-          turbidity={1.8}
-          mieCoefficient={0.002}
-          mieDirectionalG={0.98}
-        />
-      )}
 
       {/* Lighting */}
       <ambientLight intensity={1.2} color="#ffffff" />
       <directionalLight position={[12, 22, -8]} intensity={1.2} color="#fffbf0" />
       <directionalLight position={[-8, 10, 12]} intensity={0.9} color="#d6edff" />
       <directionalLight position={[0, -4, 0]} intensity={0.35} color="#f8e8c0" />
-
-      {/* Fallback ground prevents “white void” perception when panorama fails */}
-      {!panoramaReady && (
-        <mesh rotation-x={-Math.PI / 2} position={[0, -2.5, 0]}>
-          <planeGeometry args={[300, 300]} />
-          <meshStandardMaterial color="#8ec5d1" roughness={1} metalness={0} />
-        </mesh>
-      )}
 
       {/* 3-D book wall removed — books now shown as HTML overlay (BookList) */}
 
