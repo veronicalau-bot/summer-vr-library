@@ -22,6 +22,10 @@
 function qrDataURL(url, px) {
   return new Promise((resolve, reject) => {
     /* global QRCode */
+    if (typeof QRCode === 'undefined' || !QRCode || !QRCode.toDataURL) {
+      reject(new Error('QRCode library not loaded'));
+      return;
+    }
     QRCode.toDataURL(
       url,
       {
@@ -50,6 +54,12 @@ function makeQREl(url, displayPx, label = '掃描 QR') {
   const wrap = document.createElement('div');
   wrap.className = 'qr-wrap';
 
+  if (!url) {
+    // No valid link → hide QR area entirely
+    wrap.style.display = 'none';
+    return wrap;
+  }
+
   const lbl = document.createElement('span');
   lbl.className = 'qr-label';
   lbl.textContent = label;
@@ -65,7 +75,14 @@ function makeQREl(url, displayPx, label = '掃描 QR') {
   // Generate at 2× for retina; display at displayPx
   qrDataURL(url, displayPx * 2)
     .then(src  => { img.src = src; })
-    .catch(()  => { img.alt = '—'; });
+    .catch(()  => {
+      // Graceful fallback: show a small message instead of a blank square
+      img.style.display = 'none';
+      const err = document.createElement('span');
+      err.className = 'qr-error';
+      err.textContent = 'QR 無法產生';
+      wrap.appendChild(err);
+    });
 
   return wrap;
 }
