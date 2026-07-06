@@ -42,7 +42,10 @@ export class BeachScene {
     this._ballGrabbedBy = -1;
     this._ballBoundsRadius = 2.2;   // stay within arm's/step reach
     this._ballReturnRadius = 1.5;   // beyond this (when resting) it rolls back
-    this._ballGrabRadius = 0.45;   // how close a hand must be to grab
+    this._ballGrabRadius = 0.6;    // how close a hand must be to grab
+    this._ballAimTolerance = 2.8;   // ray-aim grab tolerance (× radius)
+    this._ballBaseScale = 1;        // set when the model loads
+    this._ballHovered = false;      // a controller is aiming at the ball
 
     // Desktop interaction helpers
     this._raycaster = new THREE.Raycaster();
@@ -61,6 +64,7 @@ export class BeachScene {
     this._tmpV1 = new THREE.Vector3();
     this._tmpV2 = new THREE.Vector3();
     this._tmpV3 = new THREE.Vector3();
+    this._tmpV4 = new THREE.Vector3();
     this._tmpQ1 = new THREE.Quaternion();
   }
 
@@ -219,6 +223,7 @@ export class BeachScene {
           const targetDiameter = this._ballRadius * 2;
           const scale = targetDiameter / maxDim;
           ball.scale.setScalar(scale);
+          this._ballBaseScale = scale;
 
           // Place a little in front of the user.
           ball.position.set(0.5, this._ballFloorY + this._ballRadius, -2.4);
@@ -288,9 +293,9 @@ export class BeachScene {
     }
 
     // Gravity + drag.
-    this._ballVelocity.y += -4.8 * dt;
+    this._ballVelocity.y += -9.0 * dt;
     this._ball.position.addScaledVector(this._ballVelocity, dt);
-    this._ballVelocity.multiplyScalar(Math.pow(0.992, dt * 60));
+    this._ballVelocity.multiplyScalar(Math.pow(0.985, dt * 60));
 
     // Ground bounce (virtual floor).
     const minY = this._ballFloorY + this._ballRadius;
@@ -298,13 +303,13 @@ export class BeachScene {
     if (this._ball.position.y < minY) {
       this._ball.position.y = minY;
       if (Math.abs(this._ballVelocity.y) > 0.12) {
-        this._ballVelocity.y = -this._ballVelocity.y * 0.72;
+        this._ballVelocity.y = -this._ballVelocity.y * 0.55;
       } else {
         this._ballVelocity.y = 0;
       }
       // Stronger ground friction so it doesn't roll away forever.
-      this._ballVelocity.x *= 0.90;
-      this._ballVelocity.z *= 0.90;
+      this._ballVelocity.x *= 0.88;
+      this._ballVelocity.z *= 0.88;
     }
 
     // Play-area centre: the headset in XR, world origin on desktop.
@@ -350,6 +355,12 @@ export class BeachScene {
     // Spin a little from movement for extra life.
     this._ball.rotation.x += this._ballVelocity.z * dt * 1.2;
     this._ball.rotation.z -= this._ballVelocity.x * dt * 1.2;
+
+    // Hover feedback: gently pulse the ball larger when aimed at, so the
+    // grab point is easy to spot.
+    const targetScale = this._ballBaseScale * (this._ballHovered ? 1.14 : 1.0);
+    const curScale = this._ball.scale.x;
+    this._ball.scale.setScalar(curScale + (targetScale - curScale) * Math.min(1, dt * 12));
   }
 
   _applyBallImpulse(impulse) {
@@ -450,6 +461,7 @@ export class BeachScene {
     if (!this._xrActive || !this._ball) return;
 
     const now = performance.now();
+    this._ballHovered = false;
 
     for (let i = 0; i < this._controllers.length; i += 1) {
       const ctrl = this._controllers[i];
@@ -495,7 +507,34 @@ export class BeachScene {
           state.hitCooldown = 0.15;
         }
       }
+
+      // Hover feedback: is this controller aiming at (or near) the ball?
+      const aiming = this._isAimingAtBall(ctrl, pos);
+      if (aiming) this._ballHovered = true;
+      const ray = ctrl.getObjectByName('controller-ray');
+      if (ray) ray.material.color.setHex(aiming ? 0x39ff88 : 0xffd166);
     }
+  }
+
+  /** True if the controller is close to, or its ray points at, the ball. */
+  _isAimingAtBall(ctrl, ctrlPos) {
+    if (!this._ball) return false;
+
+    // Near check.
+    if (ctrlPos.distanceTo(this._ball.position) <= this._ballRadius + this._ballGrabRadius) {
+      return true;
+    }
+
+    // Ray-aim check with a generous tolerance.
+    const dir = this._tmpV4.set(0, 0, -1)
+      .applyQuaternion(this._tmpQ1.setFromRotationMatrix(ctrl.matrixWorld))
+      .normalize();
+    this._raycaster.set(ctrlPos, dir);
+    const along = this._raycaster.ray.direction.dot(
+      this._tmpV3.copy(this._ball.position).sub(ctrlPos),
+    );
+    const rayDist = this._raycaster.ray.distanceToPoint(this._ball.position);
+    return along > 0 && along < 15 && rayDist <= this._ballRadius * this._ballAimTolerance;
   }
 
   _onXRSelectStart(index) {
@@ -520,7 +559,7 @@ export class BeachScene {
       this._raycaster.far = 15;
       const along = this._tmpV3.copy(this._ball.position).sub(ctrlPos).dot(dir);
       const rayDist = this._raycaster.ray.distanceToPoint(this._ball.position);
-      if (along > 0 && along < 15 && rayDist <= this._ballRadius * 2.2) {
+      if (along > 0 && along < 15 && rayDist <= this._ballRadius * this._ballAimTolerance) {
         canGrab = true;
       }
     }
@@ -639,6 +678,7 @@ export class BeachScene {
       s.smoothedVel.set(0, 0, 0);
       s.hitCooldown = 0;
     });
+    this._ballHovered = false;
     this._placeBallForMode();
   }
 
