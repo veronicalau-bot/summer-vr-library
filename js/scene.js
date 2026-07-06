@@ -40,7 +40,8 @@ export class BeachScene {
     this._ballFloorYXR = 0.0;      // local-floor ground is at y = 0
     this._ballVelocity = new THREE.Vector3(0, 0, 0);
     this._ballGrabbedBy = -1;
-    this._ballBoundsRadius = 7.5;
+    this._ballBoundsRadius = 2.2;   // stay within arm's/step reach
+    this._ballReturnRadius = 1.5;   // beyond this (when resting) it rolls back
     this._ballGrabRadius = 0.45;   // how close a hand must be to grab
 
     // Desktop interaction helpers
@@ -52,8 +53,8 @@ export class BeachScene {
     this._controllerGrips = [];  // grip spaces (controller mesh + physical pose)
     this._hands = [];            // hand spaces (Vision Pro hand tracking)
     this._controllerState = [
-      { history: [], lastPos: new THREE.Vector3(), smoothedVel: new THREE.Vector3(), initialized: false, hitCooldown: 0 },
-      { history: [], lastPos: new THREE.Vector3(), smoothedVel: new THREE.Vector3(), initialized: false, hitCooldown: 0 },
+      { history: [], velHistory: [], lastPos: new THREE.Vector3(), smoothedVel: new THREE.Vector3(), initialized: false, hitCooldown: 0 },
+      { history: [], velHistory: [], lastPos: new THREE.Vector3(), smoothedVel: new THREE.Vector3(), initialized: false, hitCooldown: 0 },
     ];
 
     // Reusable temp objects to reduce allocations
@@ -293,6 +294,7 @@ export class BeachScene {
 
     // Ground bounce (virtual floor).
     const minY = this._ballFloorY + this._ballRadius;
+    const onGround = this._ball.position.y <= minY + 0.01;
     if (this._ball.position.y < minY) {
       this._ball.position.y = minY;
       if (Math.abs(this._ballVelocity.y) > 0.12) {
@@ -300,22 +302,48 @@ export class BeachScene {
       } else {
         this._ballVelocity.y = 0;
       }
-      this._ballVelocity.x *= 0.94;
-      this._ballVelocity.z *= 0.94;
+      // Stronger ground friction so it doesn't roll away forever.
+      this._ballVelocity.x *= 0.90;
+      this._ballVelocity.z *= 0.90;
     }
 
-    // Keep the ball in a playable circle around the user.
-    const horizontal = this._tmpV3.set(this._ball.position.x, 0, this._ball.position.z);
-    const dist = horizontal.length();
-    if (dist > this._ballBoundsRadius) {
-      horizontal.normalize().multiplyScalar(this._ballBoundsRadius);
-      this._ball.position.x = horizontal.x;
-      this._ball.position.z = horizontal.z;
+    // Play-area centre: the headset in XR, world origin on desktop.
+    const center = this._tmpV1.set(0, 0, 0);
+    if (this._xrActive && this._renderer.xr.isPresenting) {
+      const xrCam = this._renderer.xr.getCamera();
+      center.set(xrCam.position.x, 0, xrCam.position.z);
+    }
 
-      const normal = horizontal.normalize();
+    // Keep the ball within a reachable circle around the user.
+    const offset = this._tmpV2.set(
+      this._ball.position.x - center.x,
+      0,
+      this._ball.position.z - center.z,
+    );
+    const dist = offset.length();
+    if (dist > this._ballBoundsRadius) {
+      offset.normalize().multiplyScalar(this._ballBoundsRadius);
+      this._ball.position.x = center.x + offset.x;
+      this._ball.position.z = center.z + offset.z;
+
+      const normal = offset.normalize();
       const vn = this._ballVelocity.dot(normal);
       if (vn > 0) {
         this._ballVelocity.addScaledVector(normal, -1.8 * vn);
+      }
+    }
+
+    // Gentle auto-return: if it has settled too far away, roll it back
+    // toward the user so it never gets stuck out of reach.
+    if (onGround && dist > this._ballReturnRadius && this._ballVelocity.lengthSq() < 0.05) {
+      const pull = this._tmpV3.set(
+        center.x - this._ball.position.x,
+        0,
+        center.z - this._ball.position.z,
+      );
+      if (pull.lengthSq() > 1e-4) {
+        pull.normalize();
+        this._ballVelocity.addScaledVector(pull, 1.6 * dt);
       }
     }
 
@@ -442,6 +470,11 @@ export class BeachScene {
       // direction so throws follow the final flick (not the wind-up).
       state.smoothedVel.lerp(velocity, 0.5);
 
+      // Per-frame velocity ring buffer — lets a throw use the *peak* speed
+      // just before release (the pinch often opens as the hand decelerates).
+      state.velHistory.push({ t: now, v: velocity.clone() });
+      if (state.velHistory.length > 12) state.velHistory.shift();
+
       state.history.push({
         t: now,
         pos: pos.clone(),
@@ -454,10 +487,10 @@ export class BeachScene {
       if (this._ballGrabbedBy < 0 && state.hitCooldown <= 0) {
         const dist = pos.distanceTo(this._ball.position);
         const speed = velocity.length();
-        if (dist <= this._ballRadius + 0.30 && speed > 0.4) {
+        if (dist <= this._ballRadius + 0.35 && speed > 0.35) {
           // Transfer most of the hand speed to the ball for a satisfying hit.
-          const impulse = this._tmpV3.copy(velocity).multiplyScalar(0.9);
-          impulse.y += 0.25;
+          const impulse = this._tmpV3.copy(velocity).multiplyScalar(1.0);
+          impulse.y += 0.3;
           this._applyBallImpulse(impulse);
           state.hitCooldown = 0.15;
         }
@@ -503,27 +536,41 @@ export class BeachScene {
 
     const state = this._controllerState[index];
 
-    // Use the smoothed *current* hand velocity so the throw follows the
-    // final forward flick instead of averaging in the wind-up (which
-    // previously sent the ball backwards).
-    const releaseVelocity = new THREE.Vector3().copy(state?.smoothedVel ?? this._tmpV1.set(0, 0, 0));
+    // Pick the *peak* hand velocity from the last ~250 ms. The pinch usually
+    // opens as the hand is already decelerating, so the instantaneous release
+    // speed is too low — the peak captures the actual throwing flick.
+    const releaseVelocity = new THREE.Vector3();
+    let best = null;
+    const cutoff = performance.now() - 250;
+    const velHistory = state?.velHistory ?? [];
+    for (const e of velHistory) {
+      if (e.t >= cutoff && (!best || e.v.lengthSq() > best.v.lengthSq())) {
+        best = e;
+      }
+    }
 
-    // If the hand barely moved, throw gently along where it points.
-    if (releaseVelocity.lengthSq() < 0.09) {
+    if (best && best.v.lengthSq() > 0.06) {
+      releaseVelocity.copy(best.v).multiplyScalar(1.3);
+    } else {
+      // Hand barely moved — toss gently along where it points.
       const ctrl = this._controllers[index];
       if (ctrl) {
         releaseVelocity.set(0, 0, -1)
           .applyQuaternion(this._tmpQ1.setFromRotationMatrix(ctrl.matrixWorld))
-          .multiplyScalar(2.0);
+          .multiplyScalar(2.5);
       }
-    } else {
-      // Amplify a little for a satisfying toss.
-      releaseVelocity.multiplyScalar(1.4);
     }
 
-    releaseVelocity.y += 0.4;
+    // Clamp so an over-enthusiastic flick can't fling it out of the world.
+    const maxSpeed = 8;
+    if (releaseVelocity.length() > maxSpeed) {
+      releaseVelocity.setLength(maxSpeed);
+    }
+
+    releaseVelocity.y += 0.5;
     this._ballVelocity.copy(releaseVelocity);
     this._ballGrabbedBy = -1;
+    if (state) state.velHistory.length = 0;
   }
 
   /* ── Mouse / touch look-around ──────────────────────────── */
@@ -588,6 +635,8 @@ export class BeachScene {
     this._controllerState.forEach(s => {
       s.initialized = false;
       s.history.length = 0;
+      s.velHistory.length = 0;
+      s.smoothedVel.set(0, 0, 0);
       s.hitCooldown = 0;
     });
     this._placeBallForMode();
