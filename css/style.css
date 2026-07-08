@@ -161,6 +161,15 @@ html, body {
   box-shadow: 0 8px 28px rgba(255, 140, 66, 0.60);
 }
 
+#btn-enter-midnight {
+  background: linear-gradient(135deg, #2ecf73, #1f9f57);
+  box-shadow: 0 10px 34px rgba(46, 207, 115, 0.46);
+}
+
+#btn-enter-midnight:hover {
+  box-shadow: 0 8px 28px rgba(46, 207, 115, 0.62);
+}
+
 #btn-enter-vr:active:not(:disabled) { transform: translateY(0); }
 
 #btn-enter-vr:disabled {
@@ -286,9 +295,11 @@ html, body {
 
 /* ── Book card ──────────────────────────────────────────── */
 .book-card {
-  /* subtle dark gradient on the card itself */
-  background: linear-gradient(145deg, rgba(8,18,40,0.78), rgba(5,12,28,0.92));
-  border: 1px solid var(--clr-border);
+  /* frosted glass look */
+  background: linear-gradient(145deg, rgba(255,255,255,0.14), rgba(255,255,255,0.05));
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.26);
   border-radius: var(--radius-card);
   padding: 12px;
   cursor: pointer;
@@ -305,7 +316,7 @@ html, body {
 .book-card:focus-visible {
   transform: translateY(-3px);
   box-shadow: var(--shadow);
-  border-color: rgba(255, 140, 66, 0.48);
+  border-color: rgba(255, 255, 255, 0.44);
 }
 
 /* Cover */
