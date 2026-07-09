@@ -145,7 +145,7 @@ export function createCard(book) {
   return card;
 }
 
-/* ── Render + filter ─────────────────────────────────────── */
+/* ── Render ──────────────────────────────────────────────── */
 
 /**
  * Replace the grid contents with cards for the given books array.
@@ -164,32 +164,6 @@ export function renderCards(books, container) {
   const frag = document.createDocumentFragment();
   books.forEach(book => frag.appendChild(createCard(book)));
   container.appendChild(frag);
-}
-
-/**
- * Wire up the tag selector and return filtered books via callback.
- */
-export function setupFilters(books, onFiltered, tagSelect) {
-  // Populate tag options
-  const allTags = [...new Set(books.flatMap(b => b.tags))].sort();
-  allTags.forEach(tag => {
-    const opt = document.createElement('option');
-    opt.value       = tag;
-    opt.textContent = tag;
-    tagSelect.appendChild(opt);
-  });
-
-  function apply() {
-    const t = tagSelect.value;
-    const filtered = books.filter(b => {
-      const matchT = !t || b.tags.includes(t);
-      return matchT;
-    });
-    onFiltered(filtered);
-  }
-
-  tagSelect.addEventListener('change', apply);
-  apply();
 }
 
 /* ── Small helpers (no innerHTML) ────────────────────────── */

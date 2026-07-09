@@ -200,37 +200,6 @@ html, body {
   align-items: flex-start;
 }
 
-/* ── Filter row ─────────────────────────────────────────── */
-#books-filter {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  flex-shrink: 0;
-  justify-content: flex-start;
-}
-
-#tag-filter {
-  padding: 8px 14px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--clr-border);
-  border-radius: var(--radius-pill);
-  color: var(--clr-text);
-  font-family: inherit;
-  font-size: 13px;
-  outline: none;
-  cursor: pointer;
-  transition: border-color var(--transition);
-  flex-shrink: 0;
-  appearance: none;
-  padding-right: 28px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23ffffff80' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-}
-
-#tag-filter:focus        { border-color: var(--clr-primary); }
-#tag-filter option       { background: #1a2e52; color: var(--clr-text); }
-
 /* ── Books grid ─────────────────────────────────────────── */
 #books-carousel {
   display: grid;

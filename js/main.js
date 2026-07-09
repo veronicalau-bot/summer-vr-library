@@ -12,7 +12,7 @@
 import { BeachScene }  from './scene.js';
 import { XRController } from './xr.js';
 import { fetchBooks }  from './data.js';
-import { renderCards, setupFilters, setupModal } from './cards.js';
+import { renderCards, setupModal } from './cards.js';
 
 async function main() {
   /* ── DOM refs ─────────────────────────────────────────── */
@@ -27,7 +27,6 @@ async function main() {
   const booksPrev     = document.getElementById('books-prev');
   const booksNext     = document.getElementById('books-next');
   const booksIndex    = document.getElementById('books-index');
-  const tagFilter     = document.getElementById('tag-filter');
 
   let filteredBooks = [];
   let currentIndex = 0;
@@ -134,11 +133,9 @@ async function main() {
   /* ── 3. Render book cards ─────────────────────────────── */
   if (booksResult.status === 'fulfilled') {
     const books = booksResult.value;
-    setupFilters(books, filtered => {
-      filteredBooks = filtered;
-      currentIndex = 0;
-      renderCurrentBook();
-    }, tagFilter);
+    filteredBooks = books;
+    currentIndex = 0;
+    renderCurrentBook();
   } else {
     console.error('[main] Books fetch failed:', booksResult.reason);
     booksError.textContent = '書目資料載入失敗，請確認網路連線後重新整理。';
